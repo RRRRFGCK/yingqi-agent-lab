@@ -8,7 +8,7 @@ Three runnable, auditable agent-engineering demos built to show more than a chat
 - **CareFlow** — agentic retrieval, consent-aware memory, multi-role verification, structured tools and safety-first human handoff.
 - **AgentBench** — a frozen regression suite comparing a naive baseline with the agent workflow, plus citation, tool-schema and safety fault injection.
 
-Live demo: [Yingqi Agent Lab](https://yingqi-job-radar.rrrrfgck.chatgpt.site/agent-lab)
+Live demo: [Yingqi Agent Lab](https://yingqi-agent-lab.rrrrfgck.chatgpt.site)
 
 > This is an engineering portfolio project. FinPilot is not investment advice and never connects to a broker or real capital. CareFlow does not diagnose, recommend treatment or replace professional care.
 
