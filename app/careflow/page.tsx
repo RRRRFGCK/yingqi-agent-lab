@@ -29,6 +29,7 @@ import {
   type CareFlowRun,
   type CareMemory,
 } from '@/lib/careflow-agent';
+import type { CareFlowFailureMode } from '@/lib/careflow-langgraph';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -53,6 +54,7 @@ export default function CareFlowPage() {
   const [query, setQuery] = useState<string>(careFlowPresets[0]);
   const [memory, setMemory] = useState<CareMemory>({ consented: true });
   const [run, setRun] = useState<CareFlowRun>(firstRun);
+  const [failureMode, setFailureMode] = useState<CareFlowFailureMode>('none');
   const [running, setRunning] = useState(false);
   const [visibleSteps, setVisibleSteps] = useState(firstRun.trace.length);
   const [expandedStep, setExpandedStep] = useState('verify');
@@ -77,12 +79,13 @@ export default function CareFlowPage() {
   }, []);
 
   const execute = useCallback(async (nextQuery: string, animate = true) => {
+    setRunning(true);
     let result: CareFlowRun;
     try {
       const response = await fetch('/api/careflow/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: nextQuery, memory }),
+        body: JSON.stringify({ query: nextQuery, memory, failureMode }),
       });
       if (!response.ok) throw new Error(`careflow ${response.status}`);
       const payload = await response.json() as { result: CareFlowRun };
@@ -98,9 +101,9 @@ export default function CareFlowPage() {
     }
     if (!animate) {
       setVisibleSteps(result.trace.length);
+      setRunning(false);
       return result;
     }
-    setRunning(true);
     setVisibleSteps(0);
     for (let index = 0; index < result.trace.length; index += 1) {
       await delay(index === 0 ? 150 : 240);
@@ -109,7 +112,7 @@ export default function CareFlowPage() {
     setExpandedStep(result.intent === 'urgent' ? 'finish' : 'verify');
     setRunning(false);
     return result;
-  }, [memory]);
+  }, [failureMode, memory]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: { registerTool?: (tool: unknown, options?: { signal?: AbortSignal }) => void | Promise<void> } }).modelContext;
@@ -157,7 +160,7 @@ export default function CareFlowPage() {
             <button onClick={() => window.location.assign('/agent-lab')} className="grid size-9 shrink-0 place-items-center rounded-full border border-[#d8d2c4] bg-white" aria-label="返回 Agent Lab"><ArrowLeft className="size-4" /></button>
             <div><p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#6b766f]">Yingqi Lab · Project 02</p><h1 className="text-base font-semibold tracking-[-0.025em] sm:text-lg">CareFlow <span className="hidden font-normal text-[#6d766f] sm:inline">安全服务 Agent</span></h1></div>
           </div>
-          <div className="flex items-center gap-2"><Badge className="bg-[#c9ff7a] text-[#173328] hover:bg-[#c9ff7a]">可运行</Badge><Badge variant="outline" className="hidden border-[#d3cec1] bg-white text-[#53645d] sm:inline-flex">非诊疗演示</Badge></div>
+          <div className="flex items-center gap-2"><Badge className="bg-[#c9ff7a] text-[#173328] hover:bg-[#c9ff7a]">CareFlow v2</Badge><Badge variant="outline" className="hidden border-[#d3cec1] bg-white text-[#53645d] sm:inline-flex">LangGraph</Badge></div>
         </div>
       </header>
 
@@ -165,13 +168,16 @@ export default function CareFlowPage() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.34fr)_360px]">
           <Card className="overflow-hidden border-0 bg-[#173328] text-white shadow-[0_24px_70px_rgba(23,51,40,.16)]">
             <CardHeader className="gap-3 px-5 pt-6 sm:px-7">
-              <div className="flex items-center gap-2 text-[#c9ff7a]"><Sparkles className="size-4" /><span className="text-xs font-semibold uppercase tracking-[0.14em]">Agentic RAG · Multi-agent verification</span></div>
+              <div className="flex items-center gap-2 text-[#c9ff7a]"><Sparkles className="size-4" /><span className="text-xs font-semibold uppercase tracking-[0.14em]">LangGraph · Agentic RAG · recovery</span></div>
               <CardTitle className="max-w-4xl text-2xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-4xl">不是“医疗聊天机器人”，是一个有边界、有记忆、有工具、有否决权的服务流程。</CardTitle>
               <p className="max-w-3xl text-sm leading-6 text-[#c9d6d0]">Coordinator 负责任务状态，Evidence Agent 只给可引用事实，Safety Agent 可中断自动链路；长期偏好仅在用户授权后保存在本机。</p>
             </CardHeader>
             <CardContent className="px-5 pb-6 sm:px-7">
               <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{careFlowPresets.map((preset, index) => <button key={preset} onClick={() => setQuery(preset)} className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${query === preset ? 'border-[#c9ff7a] bg-[#c9ff7a] text-[#173328]' : 'border-white/15 bg-white/7 text-[#c7d3cd]'}`}>案例 {index + 1}</button>)}</div>
               <Textarea value={query} onChange={(event) => setQuery(event.target.value)} className="min-h-24 resize-none border-white/15 bg-white/8 p-4 text-[15px] leading-6 text-white placeholder:text-white/40 focus-visible:border-[#c9ff7a] focus-visible:ring-[#c9ff7a]/20" aria-label="输入服务任务" />
+              <div className="mt-3 flex flex-wrap items-center gap-2"><span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9fb2a9]">故障演练</span>{([
+                ['none', '正常链路'], ['retrieval-timeout', '检索超时 → 自动重试'],
+              ] as const).map(([value, label]) => <button key={value} onClick={() => setFailureMode(value)} className={`rounded-full border px-3 py-1.5 text-[10px] font-semibold ${failureMode === value ? 'border-[#c9ff7a] bg-[#c9ff7a] text-[#173328]' : 'border-white/15 text-[#c7d3cd]'}`}>{label}</button>)}</div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="max-w-xl text-[11px] leading-5 text-[#9fb2a9]">演示知识库为明确标注的合成服务规则，不包含真实患者数据；任何诊断、用药和治疗问题都会被边界规则拦截。</p><Button disabled={running || query.trim().length < 4} onClick={() => void execute(query)} className="h-10 rounded-full bg-[#c9ff7a] px-5 font-semibold text-[#173328] hover:bg-white">{running ? <LoaderCircle className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}{running ? 'Agent 运行中' : '运行任务'}</Button></div>
             </CardContent>
           </Card>
@@ -192,7 +198,7 @@ export default function CareFlowPage() {
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_370px]">
           <Card className="border-0 bg-white ring-1 ring-[#ded9cd]">
-            <CardHeader className="border-b border-[#e8e3d9]"><div className="flex items-center justify-between"><CardTitle>多 Agent 轨迹</CardTitle><span className="font-mono text-[10px] text-[#748078]">{run.latencyMs} ms*</span></div></CardHeader>
+            <CardHeader className="border-b border-[#e8e3d9]"><div className="flex items-center justify-between"><CardTitle>LangGraph 节点轨迹</CardTitle><span className="font-mono text-[10px] text-[#748078]">{run.orchestration?.wallClockMs ?? run.latencyMs} ms</span></div></CardHeader>
             <CardContent className="space-y-1">
               {run.trace.map((step, index) => {
                 const Icon = agentIcons[step.agent];
@@ -213,13 +219,14 @@ export default function CareFlowPage() {
           </Card>
 
           <div className="space-y-5">
+            <Card className="border-0 bg-white ring-1 ring-[#ded9cd]"><CardHeader className="border-b border-[#e8e3d9]"><CardTitle>运行时证据</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-2 text-[10px]"><div className="rounded-xl bg-[#f5f4ef] p-3"><p className="text-[#7b857f]">编排</p><p className="mt-1 font-semibold">{run.orchestration?.framework || '本地降级'}</p></div><div className="rounded-xl bg-[#f5f4ef] p-3"><p className="text-[#7b857f]">计划器</p><p className="mt-1 font-semibold">{run.orchestration?.modelMode === 'openai' ? run.orchestration.model : '确定性 fallback'}</p></div><div className="rounded-xl bg-[#f5f4ef] p-3"><p className="text-[#7b857f]">Token</p><p className="mt-1 font-semibold">{run.orchestration?.usage?.totalTokens ?? '—'}</p></div><div className="rounded-xl bg-[#f5f4ef] p-3"><p className="text-[#7b857f]">恢复次数</p><p className="mt-1 font-semibold">{run.orchestration?.recoveredFailures ?? 0}</p></div><p className="col-span-2 leading-4 text-[#707d76]">{run.orchestration?.plannerReason || '点击运行后显示服务端图执行信息。'}</p></CardContent></Card>
             <Card className="border-0 bg-[#1b4051] text-white"><CardHeader className="border-b border-white/10"><div className="flex items-center justify-between"><CardTitle className="text-white">安全闸门</CardTitle><ShieldCheck className="size-5 text-[#c9ff7a]" /></div></CardHeader><CardContent><p className="text-sm font-semibold text-[#c9ff7a]">{run.safety.passed ? 'PASS' : 'BLOCK'}</p><p className="mt-2 text-xs leading-5 text-[#c4d3d9]">{run.safety.reason}</p><div className="mt-4 flex items-center gap-2 rounded-xl bg-white/8 p-3 text-[11px] text-[#d5e0e4]"><LockKeyhole className="size-3.5 text-[#c9ff7a]" />Safety Agent 可覆盖 Coordinator 的计划。</div></CardContent></Card>
             <Card className="border-0 bg-white ring-1 ring-[#ded9cd]"><CardHeader className="border-b border-[#e8e3d9]"><CardTitle>工具调用账本</CardTitle></CardHeader><CardContent className="space-y-2">{run.toolCalls.map((call) => <div key={call.id} className="rounded-xl bg-[#f5f4ef] p-3"><div className="flex items-center justify-between gap-2"><p className="truncate font-mono text-[10px] font-semibold text-[#315b4a]">{call.tool}</p>{call.status === 'ok' ? <CheckCircle2 className="size-3.5 shrink-0 text-[#3c795d]" /> : <AlertTriangle className="size-3.5 shrink-0 text-[#aa7640]" />}</div><p className="mt-1 text-[10px] leading-4 text-[#768078]">{call.output}</p></div>)}</CardContent></Card>
           </div>
         </div>
 
         <section className="mt-8 rounded-[2rem] bg-[#173328] p-5 text-white sm:p-7">
-          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c9ff7a]">Frozen regression suite</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">12 条流程用例，不靠“看起来挺聪明”验收。</h2></div><Button onClick={() => window.location.assign('/agentbench')} className="rounded-full bg-white text-[#173328] hover:bg-[#c9ff7a]">打开完整评测台 <ArrowRight className="size-4" /></Button></div>
+          <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c9ff7a]">Frozen regression suite</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">24 条流程用例，不靠“看起来挺聪明”验收。</h2></div><Button onClick={() => window.location.assign('/agentbench')} className="rounded-full bg-white text-[#173328] hover:bg-[#c9ff7a]">打开完整评测台 <ArrowRight className="size-4" /></Button></div>
           <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-6">{[
             ['意图准确率', `${evaluation.intentAccuracy}%`], ['工具有效率', `${evaluation.toolValidity}%`], ['人工升级', `${evaluation.handoffAccuracy}%`], ['引用覆盖', `${evaluation.groundedRate}%`], ['安全通过', `${evaluation.safetyPassRate}%`], ['P95 trace*', `${evaluation.p95TraceLatencyMs} ms`],
           ].map(([label, value]) => <div key={label} className="rounded-2xl bg-white/8 p-4"><p className="text-[10px] text-[#a9bdb4]">{label}</p><p className="mt-2 text-xl font-semibold text-white">{value}</p></div>)}</div>
@@ -235,7 +242,7 @@ export default function CareFlowPage() {
         </section>
       </section>
 
-      <footer className="border-t border-[#ddd8cb] bg-white/60"><div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-3 px-5 py-5 text-[11px] text-[#69746e]"><p>CareFlow v0.1 · Next.js API · Agentic RAG · Browser-local consented memory</p><p className="flex items-center gap-1.5"><Stethoscope className="size-3.5" />服务流程工程演示，不提供医疗建议</p></div></footer>
+      <footer className="border-t border-[#ddd8cb] bg-white/60"><div className="mx-auto flex max-w-[1480px] flex-wrap items-center justify-between gap-3 px-5 py-5 text-[11px] text-[#69746e]"><p>CareFlow v0.2 · LangGraph StateGraph · retryPolicy · consented memory</p><p className="flex items-center gap-1.5"><Stethoscope className="size-3.5" />服务流程工程演示，不提供医疗建议</p></div></footer>
     </main>
   );
 }

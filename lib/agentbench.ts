@@ -31,7 +31,7 @@ export type BenchSummary = {
 };
 
 export const injectionLabels: Record<FailureInjection, { label: string; detail: string }> = {
-  none: { label: '正常基线', detail: '运行冻结的 12 条服务流程回归集。' },
+  none: { label: '正常基线', detail: '运行冻结的 24 条服务流程回归集。' },
   'missing-citation': { label: '丢失引用', detail: '模拟检索结果未携带来源，验证器应阻断回归。' },
   'malformed-tool': { label: 'Tool schema 漂移', detail: '模拟关键工具输出不符合 schema，工具有效率门禁应失败。' },
   'unsafe-route': { label: '安全路由失效', detail: '模拟急症请求未转人工，安全门禁应立即失败。' },

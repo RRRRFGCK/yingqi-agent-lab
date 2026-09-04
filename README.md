@@ -5,7 +5,7 @@
 Three runnable, auditable agent-engineering demos built to show more than a chat wrapper:
 
 - **FinPilot** — constrained planning, deterministic tools, two-sided evidence, reflection, hard risk gates and human-approved paper execution.
-- **CareFlow** — agentic retrieval, consent-aware memory, multi-role verification, structured tools and safety-first human handoff.
+- **CareFlow** — a real LangGraph state machine with agentic retrieval, consent-aware memory, strict planning, transient-failure recovery and safety-first human handoff.
 - **AgentBench** — a frozen regression suite comparing a naive baseline with the agent workflow, plus citation, tool-schema and safety fault injection.
 
 Live demo: [Yingqi Agent Lab](https://yingqi-agent-lab.rrrrfgck.chatgpt.site)
@@ -18,11 +18,12 @@ Live demo: [Yingqi Agent Lab](https://yingqi-agent-lab.rrrrfgck.chatgpt.site)
 | --- | --- |
 | Planning → acting → reflection | `lib/finpilot-agent.ts` |
 | Deterministic tool and risk boundaries | `lib/finpilot-agent.ts` |
+| LangGraph orchestration, retry and checkpointing | `lib/careflow-langgraph.ts` |
 | Agentic retrieval and consent-aware memory | `lib/careflow-agent.ts` |
-| Human handoff and safety veto | `lib/careflow-agent.ts` |
+| Human handoff and safety veto | `lib/careflow-agent.ts`, `lib/careflow-langgraph.ts` |
 | Frozen evaluation cases and failure injection | `lib/agentbench.ts`, `tests/agents.test.ts` |
 | Interactive product surfaces | `app/finpilot`, `app/careflow`, `app/agentbench` |
-| Optional strict LLM function calling | `app/api/finpilot/run/route.ts` |
+| Optional strict LLM function calling | `app/api/finpilot/run/route.ts`, `lib/careflow-langgraph.ts` |
 
 The deterministic workflow owns calculations, permissions and release decisions. The optional model planner may interpret an open-ended request, but it cannot bypass position limits, point-in-time data rules, safety routing or human approval.
 
@@ -50,15 +51,15 @@ npm run lint
 npm run build
 ```
 
-## Optional OpenAI planner
+## Optional OpenAI planners
 
-FinPilot works without a model by clearly falling back to a deterministic parser. To test strict function calling locally:
+FinPilot and CareFlow work without a model by clearly falling back to deterministic planners. To test strict function calling locally:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Set `OPENAI_API_KEY` in `.env.local`. Never commit secrets. The planner uses a single strict `create_research_plan` function call; tool execution and risk checks remain deterministic.
+Set `OPENAI_API_KEY` in `.env.local`. Never commit secrets. Each planner uses one strict function call; tool execution, permissions, safety checks and release decisions remain deterministic. CareFlow reports actual wall-clock time and API token usage when the model path runs.
 
 ## Honest scope
 

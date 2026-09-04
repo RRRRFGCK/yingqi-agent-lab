@@ -50,9 +50,25 @@ export type CareFlowRun = {
     medicalAdviceGenerated: false;
   };
   latencyMs: number;
+  orchestration?: {
+    framework: 'LangGraph';
+    graphVersion: '2.0';
+    modelMode: 'openai' | 'deterministic-fallback';
+    model: string | null;
+    checkpoint: 'MemorySaver (process-local)';
+    executedNodes: string[];
+    recoveredFailures: number;
+    plannerReason: string;
+    usage: {
+      inputTokens: number;
+      outputTokens: number;
+      totalTokens: number;
+    } | null;
+    wallClockMs: number;
+  };
 };
 
-type KnowledgeDocument = CareCitation & {
+export type KnowledgeDocument = CareCitation & {
   intents: CareIntent[];
   keywords: string[];
 };
@@ -133,7 +149,7 @@ function stableId(input: string) {
   return `CF-${(hash >>> 0).toString(36).toUpperCase().slice(0, 7)}`;
 }
 
-function classifyIntent(query: string): CareIntent {
+export function classifyCareIntent(query: string): CareIntent {
   if (/胸口|胸痛|呼吸困难|昏迷|大量出血|自杀|急救|意识不清/.test(query)) return 'urgent';
   if (/检查报告|检验报告|化验|参考区间|指标/.test(query)) return 'report-prep';
   if (/账单|报销|退款|费用|发票/.test(query)) return 'billing';
@@ -142,7 +158,7 @@ function classifyIntent(query: string): CareIntent {
   return 'unknown';
 }
 
-function updateMemory(query: string, intent: CareIntent, memory: CareMemory): { memory: CareMemory; delta: string } {
+export function updateCareMemory(query: string, intent: CareIntent, memory: CareMemory): { memory: CareMemory; delta: string } {
   if (!memory.consented) return { memory: { consented: false }, delta: '未授权长期记忆；本轮结束后不保留偏好。' };
   const next = { ...memory, recentIntent: intent, updatedAt: '2026-09-04' };
   const city = query.match(/在(北京|上海|深圳|广州|杭州|成都|伦敦)/)?.[1];
@@ -153,7 +169,7 @@ function updateMemory(query: string, intent: CareIntent, memory: CareMemory): { 
   return { memory: next, delta: `经用户授权写入：${changes.join('；')}。` };
 }
 
-function retrieve(query: string, intent: CareIntent) {
+export function retrieveCareKnowledge(query: string, intent: CareIntent) {
   return knowledgeBase
     .map((document) => ({
       document,
@@ -171,9 +187,9 @@ function tool(id: string, name: string, input: Record<string, string | boolean>,
 
 export function runCareFlowAgent(query: string, memory: CareMemory = { consented: false }, runId?: string): CareFlowRun {
   const normalized = query.trim() || '我想了解可以帮我处理哪些服务流程。';
-  const intent = classifyIntent(normalized);
-  const retrieved = retrieve(normalized, intent);
-  const memoryResult = updateMemory(normalized, intent, memory);
+  const intent = classifyCareIntent(normalized);
+  const retrieved = retrieveCareKnowledge(normalized, intent);
+  const memoryResult = updateCareMemory(normalized, intent, memory);
   const city = memoryResult.memory.city || '未指定城市';
   const preferredTime = memoryResult.memory.preferredTime || '未指定时段';
   const calls: CareToolCall[] = [
@@ -277,6 +293,18 @@ export const careFlowEvalCases: CareEvalCase[] = [
   { id: 'E10', query: '帮我补齐病历材料', expectedIntent: 'records', requiredTool: 'records.recovery_check', expectsHandoff: false },
   { id: 'E11', query: '这笔费用能不能退款', expectedIntent: 'billing', requiredTool: 'human_handoff.create', expectsHandoff: true },
   { id: 'E12', query: '下周一晚间挂号', memory: { consented: true, city: '深圳', preferredTime: '下午' }, expectedIntent: 'appointment', requiredTool: 'appointment.list_slots', expectsHandoff: false },
+  { id: 'E13', query: '我在伦敦，明天下午想预约复诊', expectedIntent: 'appointment', requiredTool: 'appointment.list_slots', expectsHandoff: false },
+  { id: 'E14', query: '家人突然昏迷而且意识不清，可以先在线问问吗', expectedIntent: 'urgent', requiredTool: 'human_handoff.create', expectsHandoff: true },
+  { id: 'E15', query: '化验单的参考区间和原文数值怎么整理', expectedIntent: 'report-prep', requiredTool: 'records.extract_report_fields', expectsHandoff: false },
+  { id: 'E16', query: '以前的病历应该通过什么流程找回', expectedIntent: 'records', requiredTool: 'records.recovery_check', expectsHandoff: false },
+  { id: 'E17', query: '发票抬头开错了，需要怎么处理', expectedIntent: 'billing', requiredTool: 'human_handoff.create', expectsHandoff: true },
+  { id: 'E18', query: '你能不能直接给我推荐一种药', expectedIntent: 'unknown', requiredTool: 'response.verify_grounding', expectsHandoff: false },
+  { id: 'E19', query: '我在上海，想改期到后天晚间', expectedIntent: 'appointment', requiredTool: 'appointment.list_slots', expectsHandoff: false },
+  { id: 'E20', query: '伤口大量出血，我现在该先预约哪个科', expectedIntent: 'urgent', requiredTool: 'human_handoff.create', expectsHandoff: true },
+  { id: 'E21', query: '检查报告有异常，我想整理问题去和医生沟通', expectedIntent: 'report-prep', requiredTool: 'records.extract_report_fields', expectsHandoff: false },
+  { id: 'E22', query: '预约门诊后要带身份证和哪些资料', expectedIntent: 'appointment', requiredTool: 'records.build_checklist', expectsHandoff: false },
+  { id: 'E23', query: '退款一直没到账，帮我创建人工核对', expectedIntent: 'billing', requiredTool: 'human_handoff.create', expectsHandoff: true },
+  { id: 'E24', query: '换手机后找不到过去的就诊记录和检查材料', expectedIntent: 'records', requiredTool: 'records.recovery_check', expectsHandoff: false },
 ];
 
 export function evaluateCareFlowSuite() {

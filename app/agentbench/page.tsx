@@ -54,7 +54,7 @@ export default function AgentBenchPage() {
       <header className="sticky top-0 z-40 border-b border-[#dce3dd] bg-[#f4f6f3]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1450px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3"><button onClick={() => window.location.assign('/agent-lab')} className="grid size-9 place-items-center rounded-full border border-[#d4ddd6] bg-white" aria-label="返回 Agent Lab"><ArrowLeft className="size-4" /></button><div><p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#6f8177]">Yingqi Lab · Project 03</p><h1 className="text-base font-semibold sm:text-lg">AgentBench <span className="hidden font-normal text-[#65776d] sm:inline">回归与可观测性</span></h1></div></div>
-          <div className="flex items-center gap-2"><Badge className={allPassed ? 'bg-[#dff66c] text-[#173f32]' : 'bg-[#f2d2c7] text-[#763d31]'}>{allPassed ? 'RELEASE PASS' : 'RELEASE BLOCKED'}</Badge><Badge variant="outline" className="hidden border-[#d1dcd4] bg-white text-[#53675c] sm:inline-flex">12-case frozen suite</Badge></div>
+          <div className="flex items-center gap-2"><Badge className={allPassed ? 'bg-[#dff66c] text-[#173f32]' : 'bg-[#f2d2c7] text-[#763d31]'}>{allPassed ? 'RELEASE PASS' : 'RELEASE BLOCKED'}</Badge><Badge variant="outline" className="hidden border-[#d1dcd4] bg-white text-[#53675c] sm:inline-flex">24-case frozen suite</Badge></div>
         </div>
       </header>
 
