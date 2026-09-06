@@ -23,7 +23,7 @@ void test('CareFlow stops automation and hands urgent requests to a human', () =
 });
 
 void test('CareFlow v2 executes an inspectable LangGraph with checkpoint metadata', async () => {
-  const run = await runCareFlowLangGraph('我在北京，想预约下周二下午复诊', { consented: true });
+  const run = await runCareFlowLangGraph('我在北京，想预约下周二下午复诊', { consented: true }, 'none', { offline: true });
   assert.equal(run.orchestration?.framework, 'LangGraph');
   assert.equal(run.orchestration?.checkpoint, 'MemorySaver (process-local)');
   assert.deepEqual(run.orchestration?.executedNodes, ['route', 'memory', 'retrieve', 'plan', 'act', 'verify', 'finish']);
@@ -36,6 +36,7 @@ void test('CareFlow v2 retries and recovers from a transient retrieval timeout',
     '我在上海，想改期到后天下午',
     { consented: true },
     'retrieval-timeout',
+    { offline: true },
   );
   assert.equal(run.status, 'completed');
   assert.equal(run.orchestration?.recoveredFailures, 1);

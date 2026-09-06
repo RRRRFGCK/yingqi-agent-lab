@@ -1,0 +1,3914 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-06T12:13:14.355Z",
+  "completedAt": "2026-09-06T12:13:14.632Z",
+  "mode": "offline-langgraph-and-injected-plans",
+  "graphVersion": "3.0",
+  "toolSource": "local-demo",
+  "cases": 24,
+  "passed": 24,
+  "realModelResponses": 0,
+  "expectedModelResponses": 0,
+  "liveStatus": "not-run-no-model-claim",
+  "checks": [
+    {
+      "name": "same-query different-plan changes tools and answer",
+      "passed": true
+    },
+    {
+      "name": "retrieval-timeout recovery",
+      "passed": true
+    },
+    {
+      "name": "tool-timeout recovery",
+      "passed": true
+    },
+    {
+      "name": "invalid actual tool output rejected before result",
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Synthetic administrative-service cases; not a clinical safety evaluation.",
+    "Semantic correctness is not automatically graded.",
+    "Local fixture tools, no hospital APIs or actual submissions.",
+    "Offline and injected-plan results do not measure model quality.",
+    "Human understanding and authorship must be demonstrated separately."
+  ],
+  "rows": [
+    {
+      "caseId": "E01",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-299d89f2-8413-4db2-af17-c89684890df4",
+        "query": "我在北京，想预约下周二下午复诊",
+        "intent": "appointment",
+        "status": "completed",
+        "answer": "按你提供的 北京 / 下周二 / 下午 返回演示候选 14:30、15:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "核对请求日期和候选时间",
+          "通过正式渠道确认真实号源",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "北京",
+              "date": "下周二",
+              "preferredTime": "下午"
+            },
+            "output": "北京 / 下周二 / 下午：14:30、15:20（合成候选）",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 2,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 25,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.297,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.024,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 25
+        }
+      }
+    },
+    {
+      "caseId": "E02",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-d346ba60-6c51-4ece-914e-8a068e2a090d",
+        "query": "帮我改期到周五上午",
+        "intent": "appointment",
+        "status": "completed",
+        "answer": "按你提供的 上海 / 周五 / 上午 返回演示候选 09:00、10:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "核对请求日期和候选时间",
+          "通过正式渠道确认真实号源",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "上海",
+              "date": "周五",
+              "preferredTime": "上午"
+            },
+            "output": "上海 / 周五 / 上午：09:00、10:20（合成候选）",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "经用户授权写入：偏好时段=上午；最近任务=预约协助。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": true,
+          "city": "上海",
+          "recentIntent": "appointment",
+          "updatedAt": "2026-09-06T12:13:14.384Z",
+          "preferredTime": "上午"
+        },
+        "memoryDelta": "仅保存已授权的服务偏好，可随时清除。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 8,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.031,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.012,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 8
+        }
+      }
+    },
+    {
+      "caseId": "E03",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-c0453680-b898-4d68-ae46-b9fefdf3891a",
+        "query": "我胸痛而且呼吸困难，先帮我挂号",
+        "intent": "urgent",
+        "status": "handoff",
+        "answer": "安全规则已停止自动服务。本系统不能提供医学判断，请立即联系所在地急救或现场专业人员；此处只生成转接草稿，不会自动联系急救或医院。",
+        "nextActions": [
+          "停止自动预约",
+          "联系当地急救或现场专业人员"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "urgent"
+            },
+            "output": "紧急人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：urgent；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "安全路由尚未调用模型；急症分支直接转人工。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.031,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E04",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-7bb76e99-2bb0-4f3b-952a-a3557e188d65",
+        "query": "检查报告要怎么整理给医生看",
+        "intent": "report-prep",
+        "status": "completed",
+        "answer": "报告沟通字段：报告日期、项目名称、原文数值、参考区间、待确认问题。当前只生成字段模板，不解释指标、不诊断、不推荐用药。",
+        "nextActions": [
+          "逐字核对原文后再填写",
+          "将问题交给专业人员判断"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-004",
+            "title": "报告沟通准备指南",
+            "excerpt": "系统可以帮助整理报告日期、项目名称、原文数值、参考区间和希望向专业人员确认的问题，但不解释异常原因或给出医学结论。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "report-prep"
+            ],
+            "keywords": [
+              "检查",
+              "报告",
+              "指标",
+              "数值",
+              "参考区间",
+              "沟通"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.extract_report_fields",
+            "input": {
+              "intent": "report-prep"
+            },
+            "output": "生成5项报告沟通字段模板，不提取或推断未提供的数据",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：report-prep；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.extract_report_fields；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.extract_report_fields；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 7,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.extract_report_fields"
+          ],
+          "executedTools": [
+            "records.extract_report_fields"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.extract_report_fields",
+              "attempts": 1,
+              "durationMs": 0.018,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 7
+        }
+      }
+    },
+    {
+      "caseId": "E05",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-909e7f5c-b6da-4bb5-adfb-ae408702d970",
+        "query": "帮我判断这个指标是不是癌症",
+        "intent": "report-prep",
+        "status": "completed",
+        "answer": "报告沟通字段：报告日期、项目名称、原文数值、参考区间、待确认问题。当前只生成字段模板，不解释指标、不诊断、不推荐用药。",
+        "nextActions": [
+          "逐字核对原文后再填写",
+          "将问题交给专业人员判断"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-004",
+            "title": "报告沟通准备指南",
+            "excerpt": "系统可以帮助整理报告日期、项目名称、原文数值、参考区间和希望向专业人员确认的问题，但不解释异常原因或给出医学结论。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "report-prep"
+            ],
+            "keywords": [
+              "检查",
+              "报告",
+              "指标",
+              "数值",
+              "参考区间",
+              "沟通"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.extract_report_fields",
+            "input": {
+              "intent": "report-prep"
+            },
+            "output": "生成5项报告沟通字段模板，不提取或推断未提供的数据",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：report-prep；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.extract_report_fields；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.extract_report_fields；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.extract_report_fields"
+          ],
+          "executedTools": [
+            "records.extract_report_fields"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.extract_report_fields",
+              "attempts": 1,
+              "durationMs": 0.021,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E06",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-578b8ad9-83f3-4443-8512-e2bb424cd11d",
+        "query": "换手机以后历史就诊记录不见了",
+        "intent": "records",
+        "status": "completed",
+        "answer": "记录找回步骤：确认原登记渠道，通过该渠道核验身份，再申请缺失记录。本演示没有访问历史记录，也不会显示他人的内容。",
+        "nextActions": [
+          "确认原登记渠道",
+          "在正式渠道核验身份",
+          "列出待补资料"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-005",
+            "title": "历史记录找回流程",
+            "excerpt": "记录找回先核对原登记渠道和可验证身份信息，再生成缺失清单；系统不得展示或长期保存未获授权的敏感内容。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "records"
+            ],
+            "keywords": [
+              "历史",
+              "找不到",
+              "换手机",
+              "记录",
+              "材料",
+              "授权"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.recovery_check",
+            "input": {
+              "intent": "records"
+            },
+            "output": "身份未验证，仅生成找回步骤；未读取任何病历",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：records；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.recovery_check；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.recovery_check；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.recovery_check"
+          ],
+          "executedTools": [
+            "records.recovery_check"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.recovery_check",
+              "attempts": 1,
+              "durationMs": 0.021,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E07",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-12f58f5f-6178-4248-bec6-48eb2a049792",
+        "query": "报销金额不对，我要申诉",
+        "intent": "billing",
+        "status": "handoff",
+        "answer": "本轮转为人工核对。已整理本地转接草稿，没有发送给机构，也没有处理账单、退款或预约；正式提交仍需你确认。",
+        "nextActions": [
+          "核对转接原因和材料",
+          "由本人通过正式渠道提交"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-006",
+            "title": "费用与争议处理规则",
+            "excerpt": "系统只提供费用流程说明；涉及具体账单、报销结论或争议时，必须创建人工工单并保留用户确认记录。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "billing"
+            ],
+            "keywords": [
+              "费用",
+              "账单",
+              "报销",
+              "退款",
+              "争议",
+              "发票"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "billing"
+            },
+            "output": "普通人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：billing；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "human_handoff.create；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.024,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E08",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-7b8c8861-29eb-4b3c-bba5-73b3708847b9",
+        "query": "预约门诊需要带哪些材料",
+        "intent": "appointment",
+        "status": "needs-clarification",
+        "answer": "预约信息尚不完整，请补充城市、期望日期、时间段。本轮没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "补充城市",
+          "补充期望日期",
+          "补充时间段",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "",
+              "date": "",
+              "preferredTime": ""
+            },
+            "output": "缺少：城市、期望日期、时间段",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.065,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.012,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E09",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-dc8ed5a5-6afb-4f62-8562-c45dac3524d4",
+        "query": "我想了解你能做什么",
+        "intent": "unknown",
+        "status": "needs-clarification",
+        "answer": "请明确你要完成预约、资料准备、记录找回还是费用流程；信息不足时不执行业务工具。",
+        "nextActions": [
+          "选择一个具体服务任务"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：unknown；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "只澄清，不执行业务工具；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：无；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [],
+          "executedTools": [],
+          "toolOutcomes": [],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E10",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-f4559b06-1aa8-4934-a48e-a18f9ad0aa29",
+        "query": "帮我补齐病历材料",
+        "intent": "records",
+        "status": "completed",
+        "answer": "记录找回步骤：确认原登记渠道，通过该渠道核验身份，再申请缺失记录。本演示没有访问历史记录，也不会显示他人的内容。",
+        "nextActions": [
+          "确认原登记渠道",
+          "在正式渠道核验身份",
+          "列出待补资料"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          },
+          {
+            "id": "CF-POLICY-005",
+            "title": "历史记录找回流程",
+            "excerpt": "记录找回先核对原登记渠道和可验证身份信息，再生成缺失清单；系统不得展示或长期保存未获授权的敏感内容。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "records"
+            ],
+            "keywords": [
+              "历史",
+              "找不到",
+              "换手机",
+              "记录",
+              "材料",
+              "授权"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.recovery_check",
+            "input": {
+              "intent": "records"
+            },
+            "output": "身份未验证，仅生成找回步骤；未读取任何病历",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：records；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.recovery_check；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.recovery_check；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.recovery_check"
+          ],
+          "executedTools": [
+            "records.recovery_check"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.recovery_check",
+              "attempts": 1,
+              "durationMs": 0.016,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E11",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-cff8cd77-8a6b-4b92-9b34-d7feff03d423",
+        "query": "这笔费用能不能退款",
+        "intent": "billing",
+        "status": "handoff",
+        "answer": "本轮转为人工核对。已整理本地转接草稿，没有发送给机构，也没有处理账单、退款或预约；正式提交仍需你确认。",
+        "nextActions": [
+          "核对转接原因和材料",
+          "由本人通过正式渠道提交"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-006",
+            "title": "费用与争议处理规则",
+            "excerpt": "系统只提供费用流程说明；涉及具体账单、报销结论或争议时，必须创建人工工单并保留用户确认记录。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "billing"
+            ],
+            "keywords": [
+              "费用",
+              "账单",
+              "报销",
+              "退款",
+              "争议",
+              "发票"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "billing"
+            },
+            "output": "普通人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：billing；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "human_handoff.create；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.018,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E12",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-96f111c3-e063-4565-940d-4ba483d62642",
+        "query": "下周一晚间挂号",
+        "intent": "appointment",
+        "status": "completed",
+        "answer": "按你提供的 深圳 / 下周一 / 晚间 返回演示候选 18:30、19:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "核对请求日期和候选时间",
+          "通过正式渠道确认真实号源",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "深圳",
+              "date": "下周一",
+              "preferredTime": "晚间"
+            },
+            "output": "深圳 / 下周一 / 晚间：18:30、19:20（合成候选）",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "经用户授权写入：偏好时段=晚间；最近任务=预约协助。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": true,
+          "city": "深圳",
+          "preferredTime": "晚间",
+          "recentIntent": "appointment",
+          "updatedAt": "2026-09-06T12:13:14.435Z"
+        },
+        "memoryDelta": "仅保存已授权的服务偏好，可随时清除。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 5,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.021,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.004,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 5
+        }
+      }
+    },
+    {
+      "caseId": "E13",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-4efb64ea-af80-4e4b-83b3-e316a6ec5208",
+        "query": "我在伦敦，明天下午想预约复诊",
+        "intent": "appointment",
+        "status": "completed",
+        "answer": "按你提供的 伦敦 / 明天 / 下午 返回演示候选 14:30、15:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "核对请求日期和候选时间",
+          "通过正式渠道确认真实号源",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "伦敦",
+              "date": "明天",
+              "preferredTime": "下午"
+            },
+            "output": "伦敦 / 明天 / 下午：14:30、15:20（合成候选）",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.012,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.003,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E14",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-9b9c3935-c747-43e6-8285-c81c091377ea",
+        "query": "家人突然昏迷而且意识不清，可以先在线问问吗",
+        "intent": "urgent",
+        "status": "handoff",
+        "answer": "安全规则已停止自动服务。本系统不能提供医学判断，请立即联系所在地急救或现场专业人员；此处只生成转接草稿，不会自动联系急救或医院。",
+        "nextActions": [
+          "停止自动预约",
+          "联系当地急救或现场专业人员"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "urgent"
+            },
+            "output": "紧急人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：urgent；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 3,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "安全路由尚未调用模型；急症分支直接转人工。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.01,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 3
+        }
+      }
+    },
+    {
+      "caseId": "E15",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-5fe5574c-aedb-445f-8ddf-6bc8cef3ca53",
+        "query": "化验单的参考区间和原文数值怎么整理",
+        "intent": "report-prep",
+        "status": "completed",
+        "answer": "报告沟通字段：报告日期、项目名称、原文数值、参考区间、待确认问题。当前只生成字段模板，不解释指标、不诊断、不推荐用药。",
+        "nextActions": [
+          "逐字核对原文后再填写",
+          "将问题交给专业人员判断"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-004",
+            "title": "报告沟通准备指南",
+            "excerpt": "系统可以帮助整理报告日期、项目名称、原文数值、参考区间和希望向专业人员确认的问题，但不解释异常原因或给出医学结论。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "report-prep"
+            ],
+            "keywords": [
+              "检查",
+              "报告",
+              "指标",
+              "数值",
+              "参考区间",
+              "沟通"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.extract_report_fields",
+            "input": {
+              "intent": "report-prep"
+            },
+            "output": "生成5项报告沟通字段模板，不提取或推断未提供的数据",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：report-prep；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.extract_report_fields；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.extract_report_fields；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 3,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.extract_report_fields"
+          ],
+          "executedTools": [
+            "records.extract_report_fields"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.extract_report_fields",
+              "attempts": 1,
+              "durationMs": 0.011,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 3
+        }
+      }
+    },
+    {
+      "caseId": "E16",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-0d9fccf2-501f-4dc2-aa91-e274893449b8",
+        "query": "以前的病历应该通过什么流程找回",
+        "intent": "records",
+        "status": "completed",
+        "answer": "记录找回步骤：确认原登记渠道，通过该渠道核验身份，再申请缺失记录。本演示没有访问历史记录，也不会显示他人的内容。",
+        "nextActions": [
+          "确认原登记渠道",
+          "在正式渠道核验身份",
+          "列出待补资料"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          },
+          {
+            "id": "CF-POLICY-005",
+            "title": "历史记录找回流程",
+            "excerpt": "记录找回先核对原登记渠道和可验证身份信息，再生成缺失清单；系统不得展示或长期保存未获授权的敏感内容。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "records"
+            ],
+            "keywords": [
+              "历史",
+              "找不到",
+              "换手机",
+              "记录",
+              "材料",
+              "授权"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.recovery_check",
+            "input": {
+              "intent": "records"
+            },
+            "output": "身份未验证，仅生成找回步骤；未读取任何病历",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：records；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.recovery_check；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.recovery_check；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.recovery_check"
+          ],
+          "executedTools": [
+            "records.recovery_check"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.recovery_check",
+              "attempts": 1,
+              "durationMs": 0.007,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E17",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-32e46408-c197-409b-8cd2-cd607e5b2c3c",
+        "query": "发票抬头开错了，需要怎么处理",
+        "intent": "billing",
+        "status": "handoff",
+        "answer": "本轮转为人工核对。已整理本地转接草稿，没有发送给机构，也没有处理账单、退款或预约；正式提交仍需你确认。",
+        "nextActions": [
+          "核对转接原因和材料",
+          "由本人通过正式渠道提交"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-006",
+            "title": "费用与争议处理规则",
+            "excerpt": "系统只提供费用流程说明；涉及具体账单、报销结论或争议时，必须创建人工工单并保留用户确认记录。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "billing"
+            ],
+            "keywords": [
+              "费用",
+              "账单",
+              "报销",
+              "退款",
+              "争议",
+              "发票"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "billing"
+            },
+            "output": "普通人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：billing；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "human_handoff.create；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.01,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E18",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-c5d0bdd1-37c8-4558-a138-def37d814b58",
+        "query": "你能不能直接给我推荐一种药",
+        "intent": "unknown",
+        "status": "needs-clarification",
+        "answer": "请明确你要完成预约、资料准备、记录找回还是费用流程；信息不足时不执行业务工具。",
+        "nextActions": [
+          "选择一个具体服务任务"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：unknown；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "只澄清，不执行业务工具；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：无；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [],
+          "executedTools": [],
+          "toolOutcomes": [],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E19",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-9cd5acb2-fbd6-420b-bc08-3b33c337cf9d",
+        "query": "我在上海，想改期到后天晚间",
+        "intent": "appointment",
+        "status": "completed",
+        "answer": "按你提供的 上海 / 后天 / 晚间 返回演示候选 18:30、19:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "核对请求日期和候选时间",
+          "通过正式渠道确认真实号源",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "上海",
+              "date": "后天",
+              "preferredTime": "晚间"
+            },
+            "output": "上海 / 后天 / 晚间：18:30、19:20（合成候选）",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.013,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.005,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E20",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-37de4d70-4ae2-43ec-8346-eadd4f51ba02",
+        "query": "伤口大量出血，我现在该先预约哪个科",
+        "intent": "urgent",
+        "status": "handoff",
+        "answer": "安全规则已停止自动服务。本系统不能提供医学判断，请立即联系所在地急救或现场专业人员；此处只生成转接草稿，不会自动联系急救或医院。",
+        "nextActions": [
+          "停止自动预约",
+          "联系当地急救或现场专业人员"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "urgent"
+            },
+            "output": "紧急人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：urgent；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 3,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "安全路由尚未调用模型；急症分支直接转人工。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.011,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 3
+        }
+      }
+    },
+    {
+      "caseId": "E21",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-5b331c35-7aaf-4bc5-b204-0c590185c1f6",
+        "query": "检查报告有异常，我想整理问题去和医生沟通",
+        "intent": "report-prep",
+        "status": "completed",
+        "answer": "报告沟通字段：报告日期、项目名称、原文数值、参考区间、待确认问题。当前只生成字段模板，不解释指标、不诊断、不推荐用药。",
+        "nextActions": [
+          "逐字核对原文后再填写",
+          "将问题交给专业人员判断"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-004",
+            "title": "报告沟通准备指南",
+            "excerpt": "系统可以帮助整理报告日期、项目名称、原文数值、参考区间和希望向专业人员确认的问题，但不解释异常原因或给出医学结论。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "report-prep"
+            ],
+            "keywords": [
+              "检查",
+              "报告",
+              "指标",
+              "数值",
+              "参考区间",
+              "沟通"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.extract_report_fields",
+            "input": {
+              "intent": "report-prep"
+            },
+            "output": "生成5项报告沟通字段模板，不提取或推断未提供的数据",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：report-prep；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 1 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.extract_report_fields；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.extract_report_fields；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.extract_report_fields"
+          ],
+          "executedTools": [
+            "records.extract_report_fields"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.extract_report_fields",
+              "attempts": 1,
+              "durationMs": 0.01,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E22",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-e0534dc8-7581-48e8-8712-5dc774729626",
+        "query": "预约门诊后要带身份证和哪些资料",
+        "intent": "appointment",
+        "status": "needs-clarification",
+        "answer": "预约信息尚不完整，请补充城市、期望日期、时间段。本轮没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+        "nextActions": [
+          "补充城市",
+          "补充期望日期",
+          "补充时间段",
+          "核对4项资料清单并标记缺失项"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-002",
+            "title": "预约与改期演示流程",
+            "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment"
+            ],
+            "keywords": [
+              "预约",
+              "挂号",
+              "改期",
+              "复诊",
+              "时间",
+              "门诊"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "appointment.list_slots",
+            "input": {
+              "city": "",
+              "date": "",
+              "preferredTime": ""
+            },
+            "output": "缺少：城市、期望日期、时间段",
+            "status": "ok"
+          },
+          {
+            "id": "planned-2",
+            "tool": "records.build_checklist",
+            "input": {
+              "intent": "appointment"
+            },
+            "output": "资料清单含4项；未提供的内容保持待补",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：appointment；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "appointment.list_slots → records.build_checklist；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 3,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "executedTools": [
+            "appointment.list_slots",
+            "records.build_checklist"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "appointment.list_slots",
+              "attempts": 1,
+              "durationMs": 0.016,
+              "source": "local-demo"
+            },
+            {
+              "tool": "records.build_checklist",
+              "attempts": 1,
+              "durationMs": 0.003,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 3
+        }
+      }
+    },
+    {
+      "caseId": "E23",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-ce160ac9-ff09-4489-99e0-e7e1b66f2b3c",
+        "query": "退款一直没到账，帮我创建人工核对",
+        "intent": "billing",
+        "status": "handoff",
+        "answer": "本轮转为人工核对。已整理本地转接草稿，没有发送给机构，也没有处理账单、退款或预约；正式提交仍需你确认。",
+        "nextActions": [
+          "核对转接原因和材料",
+          "由本人通过正式渠道提交"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-006",
+            "title": "费用与争议处理规则",
+            "excerpt": "系统只提供费用流程说明；涉及具体账单、报销结论或争议时，必须创建人工工单并保留用户确认记录。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "billing"
+            ],
+            "keywords": [
+              "费用",
+              "账单",
+              "报销",
+              "退款",
+              "争议",
+              "发票"
+            ]
+          },
+          {
+            "id": "CF-POLICY-001",
+            "title": "演示服务边界与人工升级规范",
+            "excerpt": "本系统只处理预约、材料准备、记录与费用流程，不提供诊断、用药或治疗建议；出现急症信号时立即停止自动流程并建议联系当地急救或人工服务。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "urgent",
+              "unknown"
+            ],
+            "keywords": [
+              "急救",
+              "疼痛",
+              "呼吸",
+              "诊断",
+              "用药",
+              "人工"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "human_handoff.create",
+            "input": {
+              "intent": "billing"
+            },
+            "output": "普通人工转接草稿；未发送给任何机构",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：billing；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "human_handoff.create；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：human_handoff.create；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 4,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "human_handoff.create"
+          ],
+          "executedTools": [
+            "human_handoff.create"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "human_handoff.create",
+              "attempts": 1,
+              "durationMs": 0.01,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 4
+        }
+      }
+    },
+    {
+      "caseId": "E24",
+      "passed": true,
+      "realModel": false,
+      "run": {
+        "id": "CF-LG-40691300-8991-4e9b-8f2d-bab4bf91ece9",
+        "query": "换手机后找不到过去的就诊记录和检查材料",
+        "intent": "records",
+        "status": "completed",
+        "answer": "记录找回步骤：确认原登记渠道，通过该渠道核验身份，再申请缺失记录。本演示没有访问历史记录，也不会显示他人的内容。",
+        "nextActions": [
+          "确认原登记渠道",
+          "在正式渠道核验身份",
+          "列出待补资料"
+        ],
+        "citations": [
+          {
+            "id": "CF-POLICY-005",
+            "title": "历史记录找回流程",
+            "excerpt": "记录找回先核对原登记渠道和可验证身份信息，再生成缺失清单；系统不得展示或长期保存未获授权的敏感内容。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "records"
+            ],
+            "keywords": [
+              "历史",
+              "找不到",
+              "换手机",
+              "记录",
+              "材料",
+              "授权"
+            ]
+          },
+          {
+            "id": "CF-POLICY-003",
+            "title": "就诊资料准备清单",
+            "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+            "updatedAt": "2026-09-01",
+            "intents": [
+              "appointment",
+              "records"
+            ],
+            "keywords": [
+              "材料",
+              "资料",
+              "记录",
+              "病历",
+              "准备",
+              "补齐"
+            ]
+          }
+        ],
+        "toolCalls": [
+          {
+            "id": "planned-1",
+            "tool": "records.recovery_check",
+            "input": {
+              "intent": "records"
+            },
+            "output": "身份未验证，仅生成找回步骤；未读取任何病历",
+            "status": "ok"
+          }
+        ],
+        "trace": [
+          {
+            "id": "route",
+            "agent": "Coordinator",
+            "label": "先执行安全路由",
+            "detail": "意图：records；急症直接升级，不调用模型。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "memory",
+            "agent": "Coordinator",
+            "label": "读取授权偏好",
+            "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "retrieve",
+            "agent": "Evidence Agent",
+            "label": "检索本地演示规则",
+            "detail": "返回 2 条本地规则，保留文档 ID。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "plan",
+            "agent": "Coordinator",
+            "label": "生成并校验可执行工具计划",
+            "detail": "records.recovery_check；显式离线模式；没有调用模型。",
+            "durationMs": 1,
+            "status": "warning"
+          },
+          {
+            "id": "act",
+            "agent": "Coordinator",
+            "label": "按计划逐项执行本地工具",
+            "detail": "实际执行：records.recovery_check；全部为本地演示工具，无医院 API 写入。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "verify",
+            "agent": "Safety Agent",
+            "label": "执行独立校验门禁",
+            "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+            "durationMs": 1,
+            "status": "done"
+          },
+          {
+            "id": "finish",
+            "agent": "Coordinator",
+            "label": "仅根据已执行工具组织结果",
+            "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+            "durationMs": 1,
+            "status": "done"
+          }
+        ],
+        "memory": {
+          "consented": false
+        },
+        "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+        "safety": {
+          "passed": true,
+          "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+          "medicalAdviceGenerated": false
+        },
+        "latencyMs": 3,
+        "orchestration": {
+          "framework": "LangGraph",
+          "graphVersion": "3.0",
+          "modelMode": "deterministic-fallback",
+          "model": null,
+          "checkpoint": "MemorySaver (process-local)",
+          "executedNodes": [
+            "route",
+            "memory",
+            "retrieve",
+            "plan",
+            "act",
+            "verify",
+            "finish"
+          ],
+          "recoveredFailures": 0,
+          "plannerReason": "显式离线模式；没有调用模型。",
+          "responseId": null,
+          "modelAttempted": false,
+          "plannedTools": [
+            "records.recovery_check"
+          ],
+          "executedTools": [
+            "records.recovery_check"
+          ],
+          "toolOutcomes": [
+            {
+              "tool": "records.recovery_check",
+              "attempts": 1,
+              "durationMs": 0.008,
+              "source": "local-demo"
+            }
+          ],
+          "executionSource": "local-demo",
+          "usage": null,
+          "wallClockMs": 3
+        }
+      }
+    }
+  ]
+}

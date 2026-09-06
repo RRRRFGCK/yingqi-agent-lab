@@ -10,7 +10,9 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
-    "test": "tsx --test tests/agents.test.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "evidence:careflow": "tsx scripts/careflow-evidence.ts",
+    "eval:careflow:live": "tsx scripts/careflow-evidence.ts --live",
     "lint": "oxlint app lib tests",
     "format": "oxfmt"
   },

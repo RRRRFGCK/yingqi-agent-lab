@@ -52,13 +52,19 @@ export type CareFlowRun = {
   latencyMs: number;
   orchestration?: {
     framework: 'LangGraph';
-    graphVersion: '2.0';
-    modelMode: 'openai' | 'deterministic-fallback';
+    graphVersion: '2.0' | '3.0';
+    modelMode: 'openai' | 'deterministic-fallback' | 'test-fixture';
     model: string | null;
     checkpoint: 'MemorySaver (process-local)';
     executedNodes: string[];
     recoveredFailures: number;
     plannerReason: string;
+    responseId?: string | null;
+    modelAttempted?: boolean;
+    plannedTools?: string[];
+    executedTools?: string[];
+    toolOutcomes?: Array<{ tool: string; attempts: number; durationMs: number; source: 'local-demo' }>;
+    executionSource?: 'local-demo';
     usage: {
       inputTokens: number;
       outputTokens: number;
@@ -151,8 +157,8 @@ function stableId(input: string) {
 
 export function classifyCareIntent(query: string): CareIntent {
   if (/胸口|胸痛|呼吸困难|昏迷|大量出血|自杀|急救|意识不清/.test(query)) return 'urgent';
-  if (/检查报告|检验报告|化验|参考区间|指标/.test(query)) return 'report-prep';
   if (/账单|报销|退款|费用|发票/.test(query)) return 'billing';
+  if (/检查报告|检验报告|化验|参考区间|指标/.test(query)) return 'report-prep';
   if (/病历|历史记录|就诊记录|材料找不到|换了手机|补齐记录/.test(query)) return 'records';
   if (/预约|挂号|改期|复诊|门诊/.test(query)) return 'appointment';
   return 'unknown';
@@ -160,7 +166,7 @@ export function classifyCareIntent(query: string): CareIntent {
 
 export function updateCareMemory(query: string, intent: CareIntent, memory: CareMemory): { memory: CareMemory; delta: string } {
   if (!memory.consented) return { memory: { consented: false }, delta: '未授权长期记忆；本轮结束后不保留偏好。' };
-  const next = { ...memory, recentIntent: intent, updatedAt: '2026-09-04' };
+  const next = { ...memory, recentIntent: intent, updatedAt: new Date().toISOString() };
   const city = query.match(/在(北京|上海|深圳|广州|杭州|成都|伦敦)/)?.[1];
   const preferredTime = query.match(/(上午|下午|晚间)/)?.[1] as CareMemory['preferredTime'] | undefined;
   if (city) next.city = city;

@@ -4,8 +4,8 @@ import { runCareFlowLangGraph, type CareFlowFailureMode } from '@/lib/careflow-l
 export async function GET() {
   return Response.json({
     framework: 'LangGraph',
-    graphVersion: '2.0',
-    modelAvailable: Boolean(process.env.OPENAI_API_KEY),
+    graphVersion: '3.0',
+    modelAvailable: Boolean(process.env.OPENAI_API_KEY) && process.env.CAREFLOW_LIVE_ENABLED === 'true',
     model: process.env.OPENAI_MODEL || 'gpt-5.4-mini',
     checkpoint: 'MemorySaver (process-local)',
   });
@@ -22,14 +22,15 @@ export async function POST(request: Request) {
     consented: rawMemory.consented === true,
     city: typeof rawMemory.city === 'string' ? rawMemory.city.slice(0, 20) : undefined,
     preferredTime: ['上午', '下午', '晚间'].includes(String(rawMemory.preferredTime)) ? rawMemory.preferredTime : undefined,
-    recentIntent: rawMemory.recentIntent,
-    updatedAt: rawMemory.updatedAt,
   };
-  const failureMode: CareFlowFailureMode = body?.failureMode === 'retrieval-timeout' ? 'retrieval-timeout' : 'none';
+  const allowedFailures: CareFlowFailureMode[] = ['none', 'retrieval-timeout', 'tool-timeout', 'tool-invalid-output'];
+  const failureMode: CareFlowFailureMode = allowedFailures.includes(body?.failureMode as CareFlowFailureMode) ? body!.failureMode as CareFlowFailureMode : 'none';
   try {
-    return Response.json({ result: await runCareFlowLangGraph(query, memory, failureMode) });
+    // Public demos remain offline by default even if an unrelated API key is present.
+    // Enable live HTTP calls only in a protected environment; CLI eval is explicit.
+    return Response.json({ result: await runCareFlowLangGraph(query, memory, failureMode, { offline: process.env.CAREFLOW_LIVE_ENABLED !== 'true' }) });
   } catch (error) {
     console.error('CareFlow graph failed', error instanceof Error ? error.message : 'unknown graph error');
-    return Response.json({ error: 'graph_failed', message: 'CareFlow graph could not complete safely.' }, { status: 502 });
+    return Response.json({ error: 'graph_failed', message: 'CareFlow graph could not complete safely. No institution was contacted. For a real emergency, contact local emergency services or on-site professionals directly; do not wait for this demo.' }, { status: 502 });
   }
 }

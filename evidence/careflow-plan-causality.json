@@ -1,0 +1,354 @@
+{
+  "source": "injected-test-plans-not-model",
+  "sameQuery": "我在北京，预约周五下午复诊并整理材料",
+  "planA": {
+    "id": "CF-LG-2bed40d7-a502-43f2-9202-90fb6280da72",
+    "query": "我在北京，预约周五下午复诊并整理材料",
+    "intent": "appointment",
+    "status": "completed",
+    "answer": "按你提供的 北京 / 周五 / 下午 返回演示候选 14:30、15:20。这些是本地合成数据，不代表真实号源；没有提交预约。",
+    "nextActions": [
+      "核对请求日期和候选时间",
+      "通过正式渠道确认真实号源"
+    ],
+    "citations": [
+      {
+        "id": "CF-POLICY-002",
+        "title": "预约与改期演示流程",
+        "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+        "updatedAt": "2026-09-01",
+        "intents": [
+          "appointment"
+        ],
+        "keywords": [
+          "预约",
+          "挂号",
+          "改期",
+          "复诊",
+          "时间",
+          "门诊"
+        ]
+      },
+      {
+        "id": "CF-POLICY-003",
+        "title": "就诊资料准备清单",
+        "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+        "updatedAt": "2026-09-01",
+        "intents": [
+          "appointment",
+          "records"
+        ],
+        "keywords": [
+          "材料",
+          "资料",
+          "记录",
+          "病历",
+          "准备",
+          "补齐"
+        ]
+      }
+    ],
+    "toolCalls": [
+      {
+        "id": "planned-1",
+        "tool": "appointment.list_slots",
+        "input": {
+          "city": "北京",
+          "date": "周五",
+          "preferredTime": "下午"
+        },
+        "output": "北京 / 周五 / 下午：14:30、15:20（合成候选）",
+        "status": "ok"
+      }
+    ],
+    "trace": [
+      {
+        "id": "route",
+        "agent": "Coordinator",
+        "label": "先执行安全路由",
+        "detail": "意图：appointment；急症直接升级，不调用模型。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "memory",
+        "agent": "Coordinator",
+        "label": "读取授权偏好",
+        "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+        "durationMs": 1,
+        "status": "warning"
+      },
+      {
+        "id": "retrieve",
+        "agent": "Evidence Agent",
+        "label": "检索本地演示规则",
+        "detail": "返回 2 条本地规则，保留文档 ID。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "plan",
+        "agent": "Coordinator",
+        "label": "生成并校验可执行工具计划",
+        "detail": "appointment.list_slots；离线注入计划，仅用于验证执行器；不是模型实跑。",
+        "durationMs": 1,
+        "status": "warning"
+      },
+      {
+        "id": "act",
+        "agent": "Coordinator",
+        "label": "按计划逐项执行本地工具",
+        "detail": "实际执行：appointment.list_slots；全部为本地演示工具，无医院 API 写入。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "verify",
+        "agent": "Safety Agent",
+        "label": "执行独立校验门禁",
+        "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "finish",
+        "agent": "Coordinator",
+        "label": "仅根据已执行工具组织结果",
+        "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+        "durationMs": 1,
+        "status": "done"
+      }
+    ],
+    "memory": {
+      "consented": false
+    },
+    "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+    "safety": {
+      "passed": true,
+      "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+      "medicalAdviceGenerated": false
+    },
+    "latencyMs": 4,
+    "orchestration": {
+      "framework": "LangGraph",
+      "graphVersion": "3.0",
+      "modelMode": "test-fixture",
+      "model": null,
+      "checkpoint": "MemorySaver (process-local)",
+      "executedNodes": [
+        "route",
+        "memory",
+        "retrieve",
+        "plan",
+        "act",
+        "verify",
+        "finish"
+      ],
+      "recoveredFailures": 0,
+      "plannerReason": "离线注入计划，仅用于验证执行器；不是模型实跑。",
+      "responseId": null,
+      "modelAttempted": false,
+      "plannedTools": [
+        "appointment.list_slots"
+      ],
+      "executedTools": [
+        "appointment.list_slots"
+      ],
+      "toolOutcomes": [
+        {
+          "tool": "appointment.list_slots",
+          "attempts": 1,
+          "durationMs": 0.012,
+          "source": "local-demo"
+        }
+      ],
+      "executionSource": "local-demo",
+      "usage": null,
+      "wallClockMs": 4
+    }
+  },
+  "planB": {
+    "id": "CF-LG-d125f3b3-1a4c-429b-8aef-4b0946a65894",
+    "query": "我在北京，预约周五下午复诊并整理材料",
+    "intent": "appointment",
+    "status": "completed",
+    "answer": "按你提供的 北京 / 周五 / 下午 返回演示候选 14:30、15:20。这些是本地合成数据，不代表真实号源；没有提交预约。\n\n资料清单：身份与预约信息、既往就诊记录、检查报告原件、希望向专业人员确认的问题。缺失内容保持待补，不由系统猜测。",
+    "nextActions": [
+      "核对请求日期和候选时间",
+      "通过正式渠道确认真实号源",
+      "核对4项资料清单并标记缺失项"
+    ],
+    "citations": [
+      {
+        "id": "CF-POLICY-002",
+        "title": "预约与改期演示流程",
+        "excerpt": "预约工具需要城市、期望日期和时间段；信息不完整时先追问，提交前展示候选时段并等待用户确认。",
+        "updatedAt": "2026-09-01",
+        "intents": [
+          "appointment"
+        ],
+        "keywords": [
+          "预约",
+          "挂号",
+          "改期",
+          "复诊",
+          "时间",
+          "门诊"
+        ]
+      },
+      {
+        "id": "CF-POLICY-003",
+        "title": "就诊资料准备清单",
+        "excerpt": "流程材料可包括身份与预约信息、既往就诊记录、检查报告原件及问题清单；缺失项目应标记为待补，不应由系统猜测。",
+        "updatedAt": "2026-09-01",
+        "intents": [
+          "appointment",
+          "records"
+        ],
+        "keywords": [
+          "材料",
+          "资料",
+          "记录",
+          "病历",
+          "准备",
+          "补齐"
+        ]
+      }
+    ],
+    "toolCalls": [
+      {
+        "id": "planned-1",
+        "tool": "appointment.list_slots",
+        "input": {
+          "city": "北京",
+          "date": "周五",
+          "preferredTime": "下午"
+        },
+        "output": "北京 / 周五 / 下午：14:30、15:20（合成候选）",
+        "status": "ok"
+      },
+      {
+        "id": "planned-2",
+        "tool": "records.build_checklist",
+        "input": {
+          "intent": "appointment"
+        },
+        "output": "资料清单含4项；未提供的内容保持待补",
+        "status": "ok"
+      }
+    ],
+    "trace": [
+      {
+        "id": "route",
+        "agent": "Coordinator",
+        "label": "先执行安全路由",
+        "detail": "意图：appointment；急症直接升级，不调用模型。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "memory",
+        "agent": "Coordinator",
+        "label": "读取授权偏好",
+        "detail": "未授权长期记忆；本轮结束后不保留偏好。",
+        "durationMs": 1,
+        "status": "warning"
+      },
+      {
+        "id": "retrieve",
+        "agent": "Evidence Agent",
+        "label": "检索本地演示规则",
+        "detail": "返回 2 条本地规则，保留文档 ID。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "plan",
+        "agent": "Coordinator",
+        "label": "生成并校验可执行工具计划",
+        "detail": "appointment.list_slots → records.build_checklist；离线注入计划，仅用于验证执行器；不是模型实跑。",
+        "durationMs": 1,
+        "status": "warning"
+      },
+      {
+        "id": "act",
+        "agent": "Coordinator",
+        "label": "按计划逐项执行本地工具",
+        "detail": "实际执行：appointment.list_slots → records.build_checklist；全部为本地演示工具，无医院 API 写入。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "verify",
+        "agent": "Safety Agent",
+        "label": "执行独立校验门禁",
+        "detail": "校验计划/调用顺序、结果结构、本轮引用及强制人工升级；不是医学判断或语义正确率评测。",
+        "durationMs": 1,
+        "status": "done"
+      },
+      {
+        "id": "finish",
+        "agent": "Coordinator",
+        "label": "仅根据已执行工具组织结果",
+        "detail": "返回计划、实际调用、重试与模型来源；转接仅为本地草稿。",
+        "durationMs": 1,
+        "status": "done"
+      }
+    ],
+    "memory": {
+      "consented": false
+    },
+    "memoryDelta": "未写入长期偏好；同轮参数仅用于本次任务。",
+    "safety": {
+      "passed": true,
+      "reason": "本地行政服务模板；急症/费用强制转人工，未访问病历或提交真实服务。",
+      "medicalAdviceGenerated": false
+    },
+    "latencyMs": 3,
+    "orchestration": {
+      "framework": "LangGraph",
+      "graphVersion": "3.0",
+      "modelMode": "test-fixture",
+      "model": null,
+      "checkpoint": "MemorySaver (process-local)",
+      "executedNodes": [
+        "route",
+        "memory",
+        "retrieve",
+        "plan",
+        "act",
+        "verify",
+        "finish"
+      ],
+      "recoveredFailures": 0,
+      "plannerReason": "离线注入计划，仅用于验证执行器；不是模型实跑。",
+      "responseId": null,
+      "modelAttempted": false,
+      "plannedTools": [
+        "appointment.list_slots",
+        "records.build_checklist"
+      ],
+      "executedTools": [
+        "appointment.list_slots",
+        "records.build_checklist"
+      ],
+      "toolOutcomes": [
+        {
+          "tool": "appointment.list_slots",
+          "attempts": 1,
+          "durationMs": 0.01,
+          "source": "local-demo"
+        },
+        {
+          "tool": "records.build_checklist",
+          "attempts": 1,
+          "durationMs": 0.003,
+          "source": "local-demo"
+        }
+      ],
+      "executionSource": "local-demo",
+      "usage": null,
+      "wallClockMs": 3
+    }
+  }
+}
