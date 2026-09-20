@@ -11,8 +11,12 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "test": "tsx --test tests/*.test.ts",
+    "eval:finpilot:ablation": "node --env-file-if-exists=.env.local ./node_modules/tsx/dist/cli.mjs scripts/finpilot-ablation.ts",
+    "eval:finpilot:smoke": "node --env-file-if-exists=.env.local ./node_modules/tsx/dist/cli.mjs scripts/finpilot-ablation.ts --offline-smoke",
     "evidence:careflow": "tsx scripts/careflow-evidence.ts",
-    "eval:careflow:live": "tsx scripts/careflow-evidence.ts --live",
+    "eval:careflow:live": "node --env-file-if-exists=.env.local ./node_modules/tsx/dist/cli.mjs scripts/careflow-live-eval.ts",
+    "market:cn:download": "python scripts/cn-universe-backtest.py download",
+    "market:cn:evaluate": "python scripts/cn-universe-backtest.py evaluate",
     "lint": "oxlint app lib tests",
     "format": "oxfmt"
   },

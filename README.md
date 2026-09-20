@@ -51,6 +51,24 @@ npm run lint
 npm run build
 ```
 
+Run the evaluation harnesses:
+
+```bash
+npm run eval:finpilot:smoke
+npm run eval:finpilot:ablation
+npm run eval:careflow:live
+```
+
+The FinPilot ablation uses 50 paired requests across full, no-tools and fixed-flow configurations. The CareFlow live suite uses 60 gold cases per model and requires two or three model IDs. See [`docs/EVALUATION_ROADMAP.md`](docs/EVALUATION_ROADMAP.md) for metrics, data boundaries and commands. Live scripts read an ignored `.env.local`; never commit an API key.
+
+The optional CSI 300/500 pipeline is separate because it downloads a much larger immutable dataset:
+
+```bash
+python -m pip install -r requirements-market.txt
+npm run market:cn:download
+npm run market:cn:evaluate
+```
+
 ## Optional OpenAI planners
 
 FinPilot and CareFlow work without a model by clearly falling back to deterministic planners. To test strict function calling locally:

@@ -59,6 +59,7 @@ export type CareFlowRun = {
     executedNodes: string[];
     recoveredFailures: number;
     plannerReason: string;
+    plannerFailureKind?: 'none' | 'provider-http' | 'timeout' | 'invalid-plan-or-response' | 'not-attempted';
     responseId?: string | null;
     modelAttempted?: boolean;
     plannedTools?: string[];

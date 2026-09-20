@@ -6,10 +6,11 @@ export type CareFlowFailureMode = 'none' | 'retrieval-timeout' | 'retrieval-unav
 type PlannerMeta = {
   modelAttempted: boolean;
   mode: 'openai' | 'deterministic-fallback' | 'test-fixture'; model: string | null; reason: string; responseId: string | null;
+  failureKind: 'none' | 'provider-http' | 'timeout' | 'invalid-plan-or-response' | 'not-attempted';
   usage: { inputTokens: number; outputTokens: number; totalTokens: number } | null;
 };
 // Internal test dependency only; never map HTTP request fields to these options.
-export type CareGraphOptions = { fixturePlanner?: (query: string, intent: CareIntent) => Promise<unknown>; offline?: boolean };
+export type CareGraphOptions = { fixturePlanner?: (query: string, intent: CareIntent) => Promise<unknown>; offline?: boolean; model?: string };
 type Execution = Awaited<ReturnType<typeof executeServicePlan>>;
 const GraphState = Annotation.Root({
   query: Annotation<string>(), memory: Annotation<CareMemory>(), intent: Annotation<CareIntent>(),
@@ -24,7 +25,7 @@ function traceStep(id: string, agent: CareTraceStep['agent'], label: string, det
   return { id, agent, label, detail, durationMs: Math.max(1, Date.now() - startedAt), status };
 }
 function fallbackMeta(reason: string): PlannerMeta {
-  return { mode: 'deterministic-fallback', model: null, reason, responseId: null, usage: null, modelAttempted: false };
+  return { mode: 'deterministic-fallback', model: null, reason, responseId: null, usage: null, modelAttempted: false, failureKind: 'not-attempted' };
 }
 async function callPlanner(query: string, intent: CareIntent, options: CareGraphOptions): Promise<{ plan: ServicePlan; meta: PlannerMeta }> {
   const fallback = deterministicPlan(intent);
@@ -38,7 +39,7 @@ async function callPlanner(query: string, intent: CareIntent, options: CareGraph
   }
   const apiKey = process.env.OPENAI_API_KEY;
   if (options.offline || !apiKey) return { plan: fallback, meta: fallbackMeta(options.offline ? '显式离线模式；没有调用模型。' : '未配置模型密钥，使用规则计划；工具仍由计划驱动执行。') };
-  const model = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
+  const model = options.model || process.env.OPENAI_MODEL || 'gpt-5.4-mini';
   const attempted: PlannerMeta = { ...fallbackMeta(''), model, modelAttempted: true };
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
@@ -75,11 +76,12 @@ async function callPlanner(query: string, intent: CareIntent, options: CareGraph
     const calls = payload.output?.filter((item) => item.type === 'function_call');
     if (payload.status !== 'completed' || calls?.length !== 1 || calls[0].name !== 'create_service_plan' || !calls[0].arguments) throw new Error('invalid_model_response');
     const plan = validateServicePlan(JSON.parse(calls[0].arguments), intent);
-    return { plan, meta: { ...attempted, mode: 'openai', reason: plan.rationale } };
+    return { plan, meta: { ...attempted, mode: 'openai', reason: plan.rationale, failureKind: 'none' } };
   } catch (error) {
     // Do not expose provider bodies, keys or echoed user text in errors.
     const code = error instanceof Error && /^http_\d{3}$/.test(error.message) ? error.message : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'timeout' : 'invalid_plan_or_response';
-    return { plan: fallback, meta: { ...attempted, reason: '模型计划不可用（' + code + '），已降级为规则计划。' } };
+    const failureKind = code.startsWith('http_') ? 'provider-http' : code === 'timeout' ? 'timeout' : 'invalid-plan-or-response';
+    return { plan: fallback, meta: { ...attempted, failureKind, reason: '模型计划不可用（' + code + '），已降级为规则计划。' } };
   }
 }
 
@@ -164,6 +166,7 @@ export async function runCareFlowLangGraph(query: string, memory: CareMemory = {
     framework: 'LangGraph', graphVersion: '3.0', modelMode: result.planner.mode, model: result.planner.model,
     checkpoint: 'MemorySaver (process-local)', executedNodes: result.outputRun.trace.map((step) => step.id),
     recoveredFailures: result.recoveredFailures, plannerReason: result.planner.reason, responseId: result.planner.responseId,
+    plannerFailureKind: result.planner.failureKind,
     modelAttempted: result.planner.modelAttempted,
     plannedTools: result.plan.tools, executedTools: result.execution.calls.map((call) => call.tool), toolOutcomes: result.execution.outcomes,
     executionSource: 'local-demo', usage: result.planner.usage, wallClockMs,
