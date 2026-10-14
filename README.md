@@ -1,95 +1,65 @@
-# Yingqi Agent Lab
+# FinPilot, CareFlow & AgentBench
 
-[![CI](https://github.com/RRRRFGCK/yingqi-agent-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/RRRRFGCK/yingqi-agent-lab/actions/workflows/ci.yml)
+Tools for historical investment research, synthetic service requests and offline workflow evaluation.
 
-Three runnable, auditable agent-engineering demos built to show more than a chat wrapper:
+[Open the tools](https://yingqi-agent-lab.rrrrfgck.chatgpt.site) · [Evaluation commands](docs/EVALUATION_ROADMAP.md) · [CareFlow implementation](docs/careflow-v3.md)
 
-- **FinPilot** — constrained planning, deterministic tools, two-sided evidence, reflection, hard risk gates and human-approved paper execution.
-- **CareFlow** — a real LangGraph state machine with agentic retrieval, consent-aware memory, strict planning, transient-failure recovery and safety-first human handoff.
-- **AgentBench** — a frozen regression suite comparing a naive baseline with the agent workflow, plus citation, tool-schema and safety fault injection.
+## Projects
 
-Live demo: [Yingqi Agent Lab](https://yingqi-agent-lab.rrrrfgck.chatgpt.site)
+| Tool | What it does | Start reading |
+| --- | --- | --- |
+| FinPilot | Parses research constraints, calculates a historical portfolio, checks risk limits and records user-approved simulated orders. | [Workflow](lib/finpilot-agent.ts), [API](app/api/finpilot/run/route.ts) |
+| CareFlow | Validates a service plan, dispatches allowlisted local tools, retries transient failures and returns results with sources. | [State graph](lib/careflow-langgraph.ts), [Tool executor](lib/careflow-executor.ts) |
+| AgentBench | Compares a FAQ baseline with a rule workflow across 24 synthetic cases and simulates failures in the scoring layer. | [Evaluator](lib/agentbench.ts), [Tests](tests/agents.test.ts) |
 
-> This is an engineering portfolio project. FinPilot is not investment advice and never connects to a broker or real capital. CareFlow does not diagnose, recommend treatment or replace professional care.
+CareFlow uses a single seven-node LangGraph workflow, not multiple independent agents. Its five local handlers return synthetic appointment candidates, checklists, templates and handoff drafts. It does not submit bookings or contact staff.
 
-## What this repository demonstrates
+FinPilot uses frozen observations for eight selected stocks and SPY. Historical results have a restricted, surviving-stock universe and approximate financial-data availability. Simulated orders never reach a broker.
 
-| Capability | Where to inspect |
-| --- | --- |
-| Planning → acting → reflection | `lib/finpilot-agent.ts` |
-| Deterministic tool and risk boundaries | `lib/finpilot-agent.ts` |
-| LangGraph orchestration, retry and checkpointing | `lib/careflow-langgraph.ts` |
-| Agentic retrieval and consent-aware memory | `lib/careflow-agent.ts` |
-| Human handoff and safety veto | `lib/careflow-agent.ts`, `lib/careflow-langgraph.ts` |
-| Frozen evaluation cases and failure injection | `lib/agentbench.ts`, `tests/agents.test.ts` |
-| Interactive product surfaces | `app/finpilot`, `app/careflow`, `app/agentbench` |
-| Optional strict LLM function calling | `app/api/finpilot/run/route.ts`, `lib/careflow-langgraph.ts` |
+## Run locally
 
-The deterministic workflow owns calculations, permissions and release decisions. The optional model planner may interpret an open-ended request, but it cannot bypass position limits, point-in-time data rules, safety routing or human approval.
-
-## Quick start
-
-Requirements: Node.js 22.13 or newer.
+Node.js 22.13+ is required.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vinext, then use:
-
-- `/` or `/agent-lab` — project index
-- `/finpilot` — evidence-driven research agent
-- `/careflow` — safety-oriented service workflow
-- `/agentbench` — regression and observability console
-
-Run validation:
+Open the URL printed by the development server. Routes: `/finpilot`, `/careflow`, `/agentbench`.
 
 ```bash
 npm test
-npm run lint
 npm run build
 ```
 
-Run the evaluation harnesses:
+The test suite currently contains 24 tests. The CareFlow evidence report separately contains 24 offline graph cases; these are not 24 live-model evaluations.
+
+## Evaluation
 
 ```bash
+npm run evidence:careflow
 npm run eval:finpilot:smoke
+```
+
+The repository also includes a 50-question, three-configuration FinPilot ablation harness and a 60-case CareFlow multi-model harness:
+
+```bash
 npm run eval:finpilot:ablation
 npm run eval:careflow:live
 ```
 
-The FinPilot ablation uses 50 paired requests across full, no-tools and fixed-flow configurations. The CareFlow live suite uses 60 gold cases per model and requires two or three model IDs. See [`docs/EVALUATION_ROADMAP.md`](docs/EVALUATION_ROADMAP.md) for metrics, data boundaries and commands. Live scripts read an ignored `.env.local`; never commit an API key.
+These commands require model credentials and configuration described in [EVALUATION_ROADMAP.md](docs/EVALUATION_ROADMAP.md). Checked-in reports under `evidence/` are offline runs or test fixtures. Real-model comparative results are not claimed.
 
-The optional CSI 300/500 pipeline is separate because it downloads a much larger immutable dataset:
+The optional Chinese-equity dataset and backtest scripts are separate from the eight-stock web demo; their presence is not evidence of a completed large-universe experiment.
 
-```bash
-python -m pip install -r requirements-market.txt
-npm run market:cn:download
-npm run market:cn:evaluate
-```
+## Model and data settings
 
-## Optional OpenAI planners
+Copy `.env.example` to an ignored `.env.local` and configure server-side credentials if needed. Never place keys in browser code or commit them.
 
-FinPilot and CareFlow work without a model by clearly falling back to deterministic planners. To test strict function calling locally:
+The public CareFlow endpoint defaults to offline planning. Live access additionally requires `CAREFLOW_LIVE_ENABLED=true`; enable it only with suitable access and rate controls. Model plans are validated before local tool dispatch. Browser preferences are opt-in; graph checkpoints are process-local.
 
-```bash
-cp .env.example .env.local
-```
-
-Set `OPENAI_API_KEY` in `.env.local`. Never commit secrets. Each planner uses one strict function call; tool execution, permissions, safety checks and release decisions remain deterministic. CareFlow reports actual wall-clock time and API token usage when the model path runs.
-
-## Honest scope
-
-- Market observations are frozen historical snapshots, not live quotes.
-- Walk-forward results are historical engineering measurements, not promises of return.
-- CareFlow knowledge is a tiny synthetic service-policy corpus, not a medical knowledge base.
-- Browser memory is local and consent-gated; this demo has no production identity or encrypted data store.
-- P95 values model workflow-node time and exclude real network/model latency.
-- The project has not been described as production deployment or external-user impact.
-
-See [Architecture and trust boundaries](docs/ARCHITECTURE.md) for the data flow and extension points.
+This is a prototype. It does not provide investment or medical advice, use real patient records, or execute real financial transactions.
 
 ## License
 
-MIT
+[MIT](LICENSE)

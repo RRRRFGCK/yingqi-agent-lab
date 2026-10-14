@@ -18,10 +18,10 @@ The public route keeps model access disabled unless CAREFLOW_LIVE_ENABLED=true a
 
 ## Verification
 
-Run npm test (22 tests), npm run evidence:careflow (24 offline graph cases plus four causal/failure checks), and npm run build.
+Run npm test (24 tests), npm run evidence:careflow (24 offline graph cases plus four causal/failure checks), and npm run build.
 
 The evidence directory contains a full offline run report and two injected legal plans for the same query. Different plans cause different tools and answers. Model response mocks test the adapter contract; they are not live calls. The old AgentBench remains a separate deterministic/scoring-layer baseline.
 
-With a safely configured API connection, npm run eval:careflow:live selects six synthetic cases, including one urgent model bypass (at most five model calls). No key means LIVE_EVAL_BLOCKED and no live report. Successful live reports still use local demo tools. Semantic correctness and clinical safety are not automatically graded.
+With a safely configured API connection, npm run eval:careflow:live runs 60 synthetic cases per model for two or three configured model IDs. Urgent cases bypass the model. No key means LIVE_EVAL_BLOCKED and no live report. Successful live reports still use local demo tools. Semantic correctness and clinical safety are not automatically graded.
 
-The current verified result is 24/24 offline graph checks, with zero real model responses: 13 completed, 7 handoff and 4 needs-clarification statuses. This is not 24 fully completed service requests. The implementation has no iterative model replanning after tool results, no durable production database and no verified multi-agent collaboration. Local v3 publication is pending; do not infer that the existing public deployment has this code.
+The checked-in report contains 24/24 offline graph checks, with zero real model responses: 13 completed, 7 handoff and 4 needs-clarification statuses. This is not 24 fully completed service requests. The implementation has no iterative model replanning after tool results, no durable production database and no verified multi-agent collaboration. The updated web interface and v3 workflow were published to the existing tools site on 14 October 2026. Publication does not constitute a real-model evaluation.
