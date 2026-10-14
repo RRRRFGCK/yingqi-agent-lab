@@ -6,8 +6,8 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Yingqi Agent Lab｜Auditable Agent Engineering',
-  description: 'Three runnable agent engineering demos covering tool use, memory, safety boundaries, evaluation and release gates.',
+  title: 'FinPilot / CareFlow / AgentBench',
+  description: '投研、服务请求与离线评测工具。',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
