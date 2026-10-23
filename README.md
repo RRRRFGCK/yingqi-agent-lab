@@ -8,9 +8,15 @@ Tools for historical investment research, synthetic service requests and offline
 
 | Tool | What it does | Start reading |
 | --- | --- | --- |
-| FinPilot | Parses research constraints, calculates a historical portfolio, checks risk limits and records user-approved simulated orders. | [Workflow](lib/finpilot-agent.ts), [API](app/api/finpilot/run/route.ts) |
-| CareFlow | Validates a service plan, dispatches allowlisted local tools, retries transient failures and returns results with sources. | [State graph](lib/careflow-langgraph.ts), [Tool executor](lib/careflow-executor.ts) |
-| AgentBench | Compares a FAQ baseline with a rule workflow across 24 synthetic cases and simulates failures in the scoring layer. | [Evaluator](lib/agentbench.ts), [Tests](tests/agents.test.ts) |
+| FinPilot | Compares three strategies under shared constraints, calculates daily portfolio/benchmark diagnostics, reconciles contribution and cost sensitivity, and exports JSON/CSV. | [Research engine](lib/finpilot-research.ts), [Workflow](lib/finpilot-agent.ts) |
+| CareFlow | Executes validated tool plans, clarifies missing fields across a bounded session, records local human-review decisions and exports an audit trail. | [State graph](lib/careflow-langgraph.ts), [Session state](lib/careflow-session.ts) |
+| AgentBench | Runs 12 independent fixtures through the actual offline graph with four fault profiles; separates task completion, recovery and failure containment. | [Execution evaluator](lib/agentbench-execution.ts), [API](app/api/agentbench/run/route.ts) |
+
+## Try an end-to-end scenario
+
+- **FinPilot:** open `/finpilot#research-lab`, compare the same three strategies, change entry cost from 10 to 50 bps, inspect the drawdown chart and position attribution, then export the daily CSV. The cutoff-selected portfolios are replayed retrospectively; this analysis has selection look-ahead and is not an out-of-sample return claim. The separate historical walk-forward tab retains its original methodology.
+- **CareFlow:** enter `帮我预约复诊`, then fill `北京` and `下周二下午` in the session workbench. Inspect the actual tool results and complete a local draft review. The 12-turn, memory-only session records failures and cancellations as well as successful responses. Raw conversations are not persisted; downloads are explicit. Existing optional preference persistence remains separate. Emergency escalation cannot be cleared by a review click.
+- **AgentBench:** run the normal profile and pin it as a baseline; run transient faults, then permanent containment. Inspect individual assertions, outputs, retries and measured durations. A contained failure is never counted as a completed task. Reports include a suite version, and baseline comparisons reject incompatible suites. The old 24-case score simulator remains available in a collapsed section, clearly labelled.
 
 CareFlow uses a single seven-node LangGraph workflow, not multiple independent agents. Its five local handlers return synthetic appointment candidates, checklists, templates and handoff drafts. It does not submit bookings or contact staff.
 
@@ -32,13 +38,14 @@ npm test
 npm run build
 ```
 
-The test suite currently contains 24 tests. The CareFlow evidence report separately contains 24 offline graph cases; these are not 24 live-model evaluations.
+The tests cover the original workflows plus portfolio arithmetic, session transitions, stale responses, review gates, real execution faults and endpoint validation. The older CareFlow evidence report separately contains 24 offline graph cases; those are not live-model evaluations.
 
 ## Evaluation
 
 ```bash
 npm run evidence:careflow
 npm run eval:finpilot:smoke
+npm run evidence:workbenches
 ```
 
 The repository also includes a 50-question, three-configuration FinPilot ablation harness and a 60-case CareFlow multi-model harness:
@@ -48,7 +55,7 @@ npm run eval:finpilot:ablation
 npm run eval:careflow:live
 ```
 
-These commands require model credentials and configuration described in [EVALUATION_ROADMAP.md](docs/EVALUATION_ROADMAP.md). Checked-in reports under `evidence/` are offline runs or test fixtures. Real-model comparative results are not claimed.
+The live/ablation commands require model credentials and configuration described in [EVALUATION_ROADMAP.md](docs/EVALUATION_ROADMAP.md). `evidence:workbenches` is entirely offline and writes [workbench-regression.json](evidence/workbench-regression.json), containing four graph profiles and a reproducible portfolio comparison. Durations depend on the host and injected retry backoff. Checked-in reports under `evidence/` are offline runs or test fixtures. Real-model comparative results are not claimed.
 
 The optional Chinese-equity dataset and backtest scripts are separate from the eight-stock web demo; their presence is not evidence of a completed large-universe experiment.
 

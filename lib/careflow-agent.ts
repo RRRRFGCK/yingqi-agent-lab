@@ -1,3 +1,5 @@
+import { extractRequestSlotSignals } from './careflow-executor';
+
 export type CareIntent = 'appointment' | 'records' | 'report-prep' | 'billing' | 'urgent' | 'unknown';
 
 export type CareMemory = {
@@ -168,11 +170,10 @@ export function classifyCareIntent(query: string): CareIntent {
 export function updateCareMemory(query: string, intent: CareIntent, memory: CareMemory): { memory: CareMemory; delta: string } {
   if (!memory.consented) return { memory: { consented: false }, delta: '未授权长期记忆；本轮结束后不保留偏好。' };
   const next = { ...memory, recentIntent: intent, updatedAt: new Date().toISOString() };
-  const city = query.match(/在(北京|上海|深圳|广州|杭州|成都|伦敦)/)?.[1];
-  const preferredTime = query.match(/(上午|下午|晚间)/)?.[1] as CareMemory['preferredTime'] | undefined;
-  if (city) next.city = city;
-  if (preferredTime) next.preferredTime = preferredTime;
-  const changes = [city ? `城市=${city}` : null, preferredTime ? `偏好时段=${preferredTime}` : null, `最近任务=${intentLabels[intent]}`].filter(Boolean);
+  const { slots, mentioned } = extractRequestSlotSignals(query);
+  if (mentioned.city) { if (slots.city) next.city = slots.city; else delete next.city; }
+  if (mentioned.preferredTime) { if (slots.preferredTime) next.preferredTime = slots.preferredTime as CareMemory['preferredTime']; else delete next.preferredTime; }
+  const changes = [mentioned.city ? `城市=${slots.city || '待澄清'}` : null, mentioned.preferredTime ? `偏好时段=${slots.preferredTime || '待澄清'}` : null, `最近任务=${intentLabels[intent]}`].filter(Boolean);
   return { memory: next, delta: `经用户授权写入：${changes.join('；')}。` };
 }
 

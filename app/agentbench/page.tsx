@@ -3,20 +3,15 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  ArrowRight,
   Bug,
   Check,
   CheckCircle2,
-  CircleGauge,
   FileWarning,
-  FlaskConical,
-  GitCompareArrows,
   LoaderCircle,
   Play,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
-  Wrench,
   X,
   XCircle,
 } from 'lucide-react';
@@ -24,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { injectionLabels, runAgentBenchSuite, type FailureInjection } from '@/lib/agentbench';
+import { AgentBenchExecutionPanel } from '@/components/agentbench-execution-panel';
 
 const intentLabels = {
   appointment: '预约', records: '资料', 'report-prep': '报告', billing: '费用', urgent: '安全', unknown: '澄清',
@@ -53,12 +49,16 @@ export default function AgentBenchPage() {
     <main className="min-h-screen bg-[#f7f8fa] text-[#14231d]">
       <header className="sticky top-0 z-40 border-b border-[#dce3dd] bg-[#f7f8fa]/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1450px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3"><button onClick={() => window.location.assign('/agent-lab')} className="grid size-9 place-items-center rounded-md border border-[#d4ddd6] bg-white" aria-label="返回 工具首页"><ArrowLeft className="size-4" /></button><div><p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#6f8177]">评测工具</p><h1 className="text-base font-semibold sm:text-lg">AgentBench <span className="hidden font-normal text-[#65776d] sm:inline">离线规则评测</span></h1></div></div>
-          <div className="flex items-center gap-2"><Badge className={allPassed ? 'bg-[#dbe7f7] text-[#242a33]' : 'bg-[#f2d2c7] text-[#763d31]'}>{allPassed ? '检查通过' : '检查失败'}</Badge><Badge variant="outline" className="hidden border-[#d1dcd4] bg-white text-[#53675c] sm:inline-flex">24 条合成用例</Badge></div>
+          <div className="flex min-w-0 items-center gap-3"><button onClick={() => window.location.assign('/agent-lab')} className="grid size-9 place-items-center rounded-md border border-[#d4ddd6] bg-white" aria-label="返回工具首页"><ArrowLeft className="size-4" /></button><div><p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#6f8177]">评测工具</p><h1 className="text-base font-semibold sm:text-lg">AgentBench <span className="hidden font-normal text-[#65776d] sm:inline">执行回归工作台</span></h1></div></div>
+          <Badge variant="outline" className="border-[#d1dcd4] bg-white text-[#53675c]">LangGraph · Offline</Badge>
         </div>
       </header>
 
       <section className="mx-auto max-w-[1450px] px-4 py-7 sm:px-6 lg:px-8">
+        <AgentBenchExecutionPanel />
+        <details className="mt-8 rounded-2xl border border-[#dce3dd] bg-[#eff2ef] p-4 sm:p-5">
+        <summary className="cursor-pointer text-sm font-semibold">旧版评分层演示 · 24 条用例</summary>
+        <p className="mb-4 mt-3 text-xs leading-6 text-[#65776d]">下面保留原有评分门禁教学。这里仅修改评分标志，未执行 LangGraph；请使用上方工作台检查实际工具故障与恢复。</p>
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_390px]">
           <Card className="border-0 bg-[#242a33] text-white ">
             <CardHeader><CardTitle className="text-white">评分故障模拟</CardTitle></CardHeader>
@@ -91,8 +91,8 @@ export default function AgentBenchPage() {
           </div>
         </div>
 
+        </details>
         <div className="mt-6 flex justify-end"><Button variant="outline" onClick={() => window.location.assign('/careflow')}>返回 CareFlow</Button></div>
-        <p className="mt-4 text-[10px] leading-4 text-[#718078]">24 条合成用例 · 离线规则评测 · 故障仅在评分层模拟</p>
       </section>
     </main>
   );
