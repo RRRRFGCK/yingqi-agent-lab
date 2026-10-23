@@ -2,7 +2,7 @@
 
 Tools for historical investment research, synthetic service requests and offline workflow evaluation.
 
-[Open the tools](https://rrrrfgck.vercel.app) · [Evaluation commands](docs/EVALUATION_ROADMAP.md) · [CareFlow implementation](docs/careflow-v3.md) · [Vercel deployment](docs/VERCEL.md)
+[Open the tools](https://yingqi-agent-workbench.vercel.app) · [Evaluation commands](docs/EVALUATION_ROADMAP.md) · [CareFlow implementation](docs/careflow-v3.md) · [Vercel deployment](docs/VERCEL.md)
 
 ## Projects
 

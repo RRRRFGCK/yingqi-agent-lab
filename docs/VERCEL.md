@@ -29,7 +29,23 @@ public model calls without access controls and rate limits.
 
 The migration does not delete or redirect the original tools Site.
 
-Production: https://rrrrfgck.vercel.app
+Production: https://yingqi-agent-workbench.vercel.app
+
+Dedicated Vercel project: `yingqi-agent-workbench` in
+`wyq20020220-2441s-projects`. Keep this deployment separate from other
+projects in the account. Do not reuse an old checkout-local `.vercel/project.json`.
+Use an explicit project when deploying a clean copy of the source:
+
+```bash
+vercel deploy ./clean-source --project yingqi-agent-workbench --scope wyq20020220-2441s-projects --prod --yes
+```
+
+The 23 October upgrade was uploaded from a clean Git archive with no local
+`.env` files or previous project linkage. The homepage and three workspaces
+returned HTTP 200. Hosted AgentBench normal runs passed 200/200 assertions;
+containment runs passed 170/170 assertions (10 completed tasks, 2 contained
+failures). CareFlow completed a synthetic appointment request and respected
+the correction from afternoon to morning. Live model access remains disabled.
 
 Verified on 14 October 2026: four page routes returned HTTP 200, the CareFlow
 endpoint completed a synthetic request through seven nodes and two local tools,
