@@ -41,7 +41,25 @@ export function deterministicPlan(intent: CareIntent): ServicePlan {
   return { objective: '处理非诊疗服务请求', tools, needsHumanReview: ['urgent', 'billing'].includes(intent), rationale: '以最小业务工具处理请求；权限与人工升级由执行器独立校验。' };
 }
 
-export function extractRequestSlots(query: string, memory: CareMemory): CareRequestSlots {
+const supportedCities = ['北京', '上海', '深圳', '广州', '杭州', '成都', '伦敦'];
+const timeAliases: Record<string, string> = { 上午: '上午', 早上: '上午', 早晨: '上午', 下午: '下午', 午后: '下午', 晚间: '晚间', 晚上: '晚间', 夜间: '晚间' };
+type SlotCandidate = { value: string; correction: boolean };
+
+function slotCandidate(query: string, index: number, raw: string, value: string): SlotCandidate | null {
+  const before = query.slice(Math.max(0, index - 10), index);
+  const after = query.slice(index + raw.length);
+  if (/(?:不要|不选|不是|不去|不在|避开|排除|不能|不想要?|不想选)\s*$/.test(before) || /^(?:不行|不要|不选)/.test(after)) return null;
+  return { value, correction: /(?:改为|改成|换成|改到|换到|改去|换去)\s*$/.test(before) };
+}
+
+function resolveSlot(candidates: SlotCandidate[]) {
+  const corrected = candidates.filter((candidate) => candidate.correction);
+  const values = [...new Set((corrected.length ? corrected : candidates).map((candidate) => candidate.value))];
+  return values.length === 1 ? values[0] : '';
+}
+
+/** Signals distinguish an absent field from an explicitly changed, unsupported or ambiguous field. */
+export function extractRequestSlotSignals(query: string) {
   const dates = [...query.matchAll(/\b\d{4}-\d{1,2}-\d{1,2}\b|今天|明天|后天|下周[一二三四五六日天]?|周[一二三四五六日天]|\d{1,2}[月/-]\d{1,2}日?/g)].map((match) => match[0]);
   let date = new Set(dates).size === 1 ? dates[0] : '';
   if (date && /^\d/.test(date)) {
@@ -50,11 +68,34 @@ export function extractRequestSlots(query: string, memory: CareMemory): CareRequ
     const parsed = new Date(Date.UTC(year, month - 1, day));
     if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) date = '';
   }
-  // One-turn task parameters remain available without consenting to persistent memory.
+  const cityMatches = [...query.matchAll(/北京|上海|深圳|广州|杭州|成都|伦敦|天津|重庆|南京|武汉|苏州|西安|长沙|郑州|香港|澳门|纽约|东京|巴黎/g)];
+  const cityCandidates = cityMatches.map((match) => slotCandidate(query, match.index, match[0], supportedCities.includes(match[0]) ? match[0] : '')).filter((candidate): candidate is SlotCandidate => candidate !== null);
+  let cityMentioned = cityMatches.length > 0 || /城市|地点|[\u4e00-\u9fff]{2,8}市/.test(query);
+  // Location-change phrases also catch unsupported destinations without inventing a city parser.
+  for (const match of query.matchAll(/(?:城市|地点)(?:改为|改成|是|为)?\s*[:：]?\s*([\u4e00-\u9fff]{2,12})|(?:改去|换去|去往)\s*([\u4e00-\u9fff]{2,12})/g)) {
+    const raw = match[1] || match[2];
+    if (/^(?:周|下周|今天|明天|后天|上午|下午|晚间|晚上|早上|早晨|夜间|医院|门诊|预约|挂号|复诊|看病|看诊|网上|线上|当地)/.test(raw)) continue;
+    cityMentioned = true;
+    const city = supportedCities.find((candidate) => raw.startsWith(candidate)) || '';
+    const offset = match.index + match[0].indexOf(raw);
+    const candidate = slotCandidate(query, offset, raw, city);
+    if (candidate) cityCandidates.push(candidate);
+  }
+  const timeMatches = [...query.matchAll(/上午|下午|晚间|早上|早晨|午后|晚上|夜间|凌晨|中午|正午|深夜|全天/g)];
+  const timeCandidates = timeMatches.map((match) => slotCandidate(query, match.index, match[0], timeAliases[match[0]] || '')).filter((candidate): candidate is SlotCandidate => candidate !== null);
   return {
-    city: query.match(/北京|上海|深圳|广州|杭州|成都|伦敦/)?.[0] || (memory.consented ? memory.city : '') || '',
-    date,
-    preferredTime: query.match(/上午|下午|晚间/)?.[0] || (memory.consented ? memory.preferredTime : '') || '',
+    slots: { city: resolveSlot(cityCandidates), date, preferredTime: resolveSlot(timeCandidates) },
+    mentioned: { city: cityMentioned, date: dates.length > 0 || /\d{1,4}[月/-]\d{1,2}|下周/.test(query), preferredTime: timeMatches.length > 0 || /时段|时间段/.test(query) },
+  };
+}
+
+export function extractRequestSlots(query: string, memory: CareMemory): CareRequestSlots {
+  const { slots, mentioned } = extractRequestSlotSignals(query);
+  // Explicit unsupported or conflicting changes must be clarified, never replaced by saved preferences.
+  return {
+    city: mentioned.city ? slots.city : (memory.consented ? memory.city : '') || '',
+    date: slots.date,
+    preferredTime: mentioned.preferredTime ? slots.preferredTime : (memory.consented ? memory.preferredTime : '') || '',
   };
 }
 

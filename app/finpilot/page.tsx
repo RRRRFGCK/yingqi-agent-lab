@@ -8,28 +8,20 @@ import {
   BarChart3,
   Bot,
   BrainCircuit,
-  Check,
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   CircleDollarSign,
   Clock3,
-  Code2,
   Database,
   FileSearch,
   History,
-  Info,
-  Layers3,
   LoaderCircle,
   LockKeyhole,
   Play,
   RefreshCw,
   RotateCcw,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
   TestTube2,
-  Video,
   Wrench,
   XCircle,
 } from 'lucide-react';
@@ -39,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { Textarea } from '@/components/ui/textarea';
+import { FinPilotResearchPanel } from '@/components/finpilot-research-panel';
 import {
   defaultTasks,
   evaluateWalkForwardSuite,
@@ -51,7 +44,7 @@ import {
   type Strategy,
 } from '@/lib/finpilot-agent';
 
-type View = 'cockpit' | 'evaluation';
+type View = 'cockpit' | 'evaluation' | 'research';
 type WebMCPContext = {
   registerTool: (
     tool: {
@@ -68,7 +61,7 @@ type WebMCPContext = {
 
 const chartConfig = {
   portfolio: { label: 'FinPilot 组合', color: '#242a33' },
-  benchmark: { label: '等权基线', color: '#95a49d' },
+  benchmark: { label: 'SPY 基准', color: '#95a49d' },
 } satisfies ChartConfig;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -122,10 +115,17 @@ export default function FinPilotPage() {
   }, [run]);
 
   useEffect(() => {
-    const requestedView = new URLSearchParams(window.location.search).get('view');
-    if (requestedView !== 'evaluation' && requestedView !== 'cockpit') return;
-    const frame = window.requestAnimationFrame(() => setView(requestedView));
-    return () => window.cancelAnimationFrame(frame);
+    const syncLocation = () => {
+      const requestedView = window.location.hash === '#research-lab' ? 'research' : new URLSearchParams(window.location.search).get('view');
+      setView(requestedView === 'evaluation' || requestedView === 'research' ? requestedView : 'cockpit');
+    };
+    syncLocation();
+    window.addEventListener('hashchange', syncLocation);
+    window.addEventListener('popstate', syncLocation);
+    return () => {
+      window.removeEventListener('hashchange', syncLocation);
+      window.removeEventListener('popstate', syncLocation);
+    };
   }, []);
 
   const performRun = useCallback(async (nextTask: string, nextStrategy?: Strategy, animate = true) => {
@@ -271,12 +271,12 @@ export default function FinPilotPage() {
             <div className="min-w-0"><p className="truncate text-[9px] font-semibold uppercase tracking-[0.18em] text-[#668075] sm:text-[10px]">投研工具</p><h1 className="truncate text-base font-semibold tracking-[-0.025em] sm:text-lg">FinPilot <span className="hidden font-normal text-[#648075] sm:inline">投研与模拟交易</span></h1></div>
           </div>
           <nav className="hidden items-center rounded-md border border-[#d5dfd8] bg-white p-1 md:flex" aria-label="FinPilot 页面导航">
-            {([['cockpit', '工作台'], ['evaluation', '历史回测']] as Array<[View, string]>).map(([key, label]) => <button key={key} onClick={() => setView(key)} className={`rounded-md px-3 py-2 text-xs font-semibold transition ${view === key ? 'bg-[#242a33] text-white' : 'text-[#607169] hover:bg-[#eef3ee]'}`}>{label}</button>)}
+            {([['cockpit', '工作台'], ['research', '策略实验室'], ['evaluation', '历史回测']] as Array<[View, string]>).map(([key, label]) => <button key={key} onClick={() => setView(key)} className={`rounded-md px-3 py-2 text-xs font-semibold transition ${view === key ? 'bg-[#242a33] text-white' : 'text-[#607169] hover:bg-[#eef3ee]'}`}>{label}</button>)}
           </nav>
           <div className="flex shrink-0 items-center gap-2"><button onClick={() => window.location.assign('/agent-lab')} className="hidden rounded-md border border-[#cedad2] bg-white px-3 py-2 text-xs font-semibold text-[#48675b] lg:block">工具首页</button><Badge className="bg-[#dbe7f7] text-[#242a33] hover:bg-[#dbe7f7]">模拟盘</Badge><Badge variant="outline" className="hidden border-[#cedad2] bg-white text-[#48675b] xl:inline-flex">{run.planner.mode === 'openai' ? `OpenAI ${run.planner.model}` : '规则降级'}</Badge></div>
         </div>
         <div className="flex gap-1 overflow-x-auto border-t border-[#e4eae5] px-4 py-2 md:hidden">
-          {([['cockpit', '工作台'], ['evaluation', '历史回测']] as Array<[View, string]>).map(([key, label]) => <button key={key} onClick={() => setView(key)} className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold ${view === key ? 'bg-[#242a33] text-white' : 'bg-white text-[#607169]'}`}>{label}</button>)}
+          {([['cockpit', '工作台'], ['research', '策略实验室'], ['evaluation', '历史回测']] as Array<[View, string]>).map(([key, label]) => <button key={key} onClick={() => setView(key)} className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold ${view === key ? 'bg-[#242a33] text-white' : 'bg-white text-[#607169]'}`}>{label}</button>)}
         </div>
       </header>
 
@@ -377,6 +377,8 @@ export default function FinPilotPage() {
           {completed && <Card className="mt-5 border-0 ring-1 ring-[#dce4dc]"><CardHeader className="border-b border-[#e3e9e4]"><div className="flex flex-wrap items-center justify-between gap-3"><div><CardTitle className="mt-1">历史样本上的组合回放</CardTitle></div><p className="text-[11px] text-[#718078]">仅用于验证数据与执行链路，不代表未来收益</p></div></CardHeader><CardContent><ChartContainer config={chartConfig} className="h-56 w-full aspect-auto" initialDimension={{ width: 900, height: 224 }}><AreaChart data={run.performance} margin={{ left: -20, right: 12, top: 8, bottom: 0 }}><defs><linearGradient id="portfolioFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-portfolio)" stopOpacity={0.25} /><stop offset="95%" stopColor="var(--color-portfolio)" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="3 3" /><XAxis dataKey="period" tickLine={false} axisLine={false} /><YAxis domain={['dataMin - 1', 'dataMax + 1']} tickLine={false} axisLine={false} /><ChartTooltip content={<ChartTooltipContent />} /><Area dataKey="benchmark" type="monotone" fill="transparent" stroke="var(--color-benchmark)" strokeDasharray="5 5" strokeWidth={1.5} /><Area dataKey="portfolio" type="monotone" fill="url(#portfolioFill)" stroke="var(--color-portfolio)" strokeWidth={2.5} /></AreaChart></ChartContainer></CardContent></Card>}
         </section>
       )}
+
+      {view === 'research' && <FinPilotResearchPanel sourceRun={run} />}
 
       {view === 'evaluation' && (
         <section className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
